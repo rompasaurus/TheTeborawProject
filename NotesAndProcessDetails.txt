@@ -1,0 +1,195 @@
+This document is intend to be a snapshot of what I am doing and learning each time I make progress towards Teboarw development with its primary focus being on the Dotnet API back bone of the application.
+
+Currently I am progreessing through some tutorial videos and msft documentation in hopes to get a better ground of the ms dev environment and the best way to get an api in place that also handles authentication
+
+Jan 18 2024:
+    Began Udemy coursework going from scaatch and creating an angular/ c# web application 
+
+    Build an app with ASPNET Core and Angular from scratch Notes:
+
+        Dotnet CLI Commands:
+            dotnet --info
+                will show which sdks and runtimes are available to use and dev against and run dlls against
+                    Example output: 
+                        Runtime Environment:
+                        OS Name:     Mac OS X
+                        OS Version:  14.2
+                        OS Platform: Darwin
+                        RID:         osx-arm64
+                        Base Path:   /usr/local/share/dotnet/sdk/8.0.100/
+
+                        .NET workloads installed:
+                        Workload version: 8.0.100-manifests.6c33ef20
+                        There are no installed workloads to display.
+
+                        Host:
+                        Version:      8.0.0
+                        Architecture: arm64
+                        Commit:       5535e31a71
+
+                        .NET SDKs installed:
+                        6.0.414 [/usr/local/share/dotnet/sdk]
+                        6.0.416 [/usr/local/share/dotnet/sdk]
+                        6.0.417 [/usr/local/share/dotnet/sdk]
+                        7.0.308 [/usr/local/share/dotnet/sdk]
+                        7.0.310 [/usr/local/share/dotnet/sdk]
+                        7.0.311 [/usr/local/share/dotnet/sdk]
+                        8.0.100 [/usr/local/share/dotnet/sdk]
+
+                        .NET runtimes installed:
+                        Microsoft.AspNetCore.App 6.0.22 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.AspNetCore.App 6.0.24 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.AspNetCore.App 6.0.25 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.AspNetCore.App 7.0.11 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.AspNetCore.App 7.0.13 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.AspNetCore.App 7.0.14 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.AspNetCore.App 8.0.0 [/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App]
+                        Microsoft.NETCore.App 6.0.22 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+                        Microsoft.NETCore.App 6.0.24 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+                        Microsoft.NETCore.App 6.0.25 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+                        Microsoft.NETCore.App 7.0.11 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+                        Microsoft.NETCore.App 7.0.13 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+                        Microsoft.NETCore.App 7.0.14 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+                        Microsoft.NETCore.App 8.0.0 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
+
+            dotnet -h 
+
+            
+                output all the available commands 
+                outpu:
+                    Execute a .NET SDK command.
+                    sdk-options:
+                    -d|--diagnostics  Enable diagnostic output.
+                    -h|--help         Show command line help.
+                    --info            Display .NET information.
+                    --list-runtimes   Display the installed runtimes.
+                    --list-sdks       Display the installed SDKs.
+                    --version         Display .NET SDK version in use.
+
+                    SDK commands:
+                    add               Add a package or reference to a .NET project.
+                    build             Build a .NET project.
+                    build-server      Interact with servers started by a build.
+                    clean             Clean build outputs of a .NET project.
+                    format            Apply style preferences to a project or solution.
+                    help              Show command line help.
+                    list              List project references of a .NET project.
+                    msbuild           Run Microsoft Build Engine (MSBuild) commands.
+                    new               Create a new .NET project or file.
+                    nuget             Provides additional NuGet commands.
+                    pack              Create a NuGet package.
+                    publish           Publish a .NET project for deployment.
+                    remove            Remove a package or reference from a .NET project.
+                    restore           Restore dependencies specified in a .NET project.
+                    run               Build and run a .NET project output.
+                    sdk               Manage .NET SDK installation.
+                    sln               Modify Visual Studio solution files.
+                    store             Store the specified assemblies in the runtime package store.
+                    test              Run unit tests using the test runner specified in a .NET project.
+                    tool              Install or manage tools that extend the .NET experience.
+                    vstest            Run Microsoft Test Engine (VSTest) commands.
+                    workload          Manage optional workloads.
+
+                    Additional commands from bundled tools:
+                    dev-certs         Create and manage development certificates.
+                    fsi               Start F# Interactive / execute F# scripts.
+                    user-jwts         Manage JSON Web Tokens in development.
+                    user-secrets      Manage development user secrets.
+                    watch             Start a file watcher that runs a command when files change.
+
+            dotnet new -h 
+                lists what you can do with the new command 
+                output:
+                    Usage:
+                    dotnet new [<template-short-name> [<template-args>...]] [options]
+                    dotnet new [command] [options]
+
+                    Arguments:
+                    <template-short-name>  A short name of the template to create.
+                    <template-args>        Template specific options to use.
+
+                    Options:
+                    -o, --output <output>    Location to place the generated output.
+                    -n, --name <name>        The name for the output being created. If no name is specified, the name of the output directory is used.
+                    --dry-run                Displays a summary of what would happen if the given command line were run if it would result in a template creation.
+                    --force                  Forces content to be generated even if it would change existing files.
+                    --no-update-check        Disables checking for the template package updates when instantiating a template.
+                    --project <project>      The project that should be used for context evaluation.
+                    -v, --verbosity <LEVEL>  Sets the verbosity level. Allowed values are q[uiet], m[inimal], n[ormal], and diag[nostic]. [default: normal]
+                    -d, --diagnostics        Enables diagnostic output.
+                    -?, -h, --help           Show command line help.
+
+                    Commands:
+                    create <template-short-name> <template-args>  Instantiates a template with given short name. An alias of 'dotnet new <template name>'.
+                    install <package>                             Installs a template package.
+                    uninstall <package>                           Uninstalls a template package.
+                    update                                        Checks the currently installed template packages for update, and install the updates.
+                    search <template-name>                        Searches for the templates on NuGet.org.
+                    list <template-name>                          Lists templates containing the specified template name. If no name is specified, lists all templates.
+                    details <package-identifier>                  Provides the details for specified template package.
+                                                                        The command checks if the package is installed locally, if it was not found, it searches the configured NuGet feeds.
+
+            dotnet new list
+                lists all the templates available to create projects 
+                output:
+                    Template Name                                 Short Name                  Language    Tags                            
+                    --------------------------------------------  --------------------------  ----------  --------------------------------
+                    API Controller                                apicontroller               [C#]        Web/ASP.NET                     
+                    ASP.NET Core Empty                            web                         [C#],F#     Web/Empty                       
+                    ASP.NET Core gRPC Service                     grpc                        [C#]        Web/gRPC/API/Service            
+                    ASP.NET Core Web API                          webapi                      [C#],F#     Web/WebAPI/Web API/API/Service  
+                    ASP.NET Core Web API (native AOT)             webapiaot                   [C#]        Web/Web API/API/Service         
+                    ASP.NET Core Web App (Model-View-Controller)  mvc                         [C#],F#     Web/MVC                         
+                    ASP.NET Core Web App (Razor Pages)            webapp,razor                [C#]        Web/MVC/Razor Pages             
+                    ASP.NET Core with Angular                     angular                     [C#]        Web/MVC/SPA                     
+                    ASP.NET Core with React.js                    react                       [C#]        Web/MVC/SPA                     
+                    Blazor Server App                             blazorserver                [C#]        Web/Blazor                      
+                    Blazor Server App Empty                       blazorserver-empty          [C#]        Web/Blazor/Empty                
+                    Blazor Web App                                blazor                      [C#]        Web/Blazor/WebAssembly          
+                    Blazor WebAssembly App Empty                  blazorwasm-empty            [C#]        Web/Blazor/WebAssembly/PWA/Empty
+                    Blazor WebAssembly Standalone App             blazorwasm                  [C#]        Web/Blazor/WebAssembly/PWA      
+                    Class Library                                 classlib                    [C#],F#,VB  Common/Library                  
+                    Console App                                   console                     [C#],F#,VB  Common/Console                  
+                    dotnet gitignore file                         gitignore,.gitignore                    Config                          
+                    Dotnet local tool manifest file               tool-manifest                           Config                          
+                    EditorConfig file                             editorconfig,.editorconfig              Config                          
+                    global.json file                              globaljson,global.json                  Config                          
+                    MSBuild Directory.Build.props file            buildprops                              MSBuild/props                   
+                    MSBuild Directory.Build.targets file          buildtargets                            MSBuild/props                   
+                    MSTest Playwright Test Project                mstest-playwright           [C#]        Test/MSTest/Playwright          
+                    MSTest Test Project                           mstest                      [C#],F#,VB  Test/MSTest                     
+                    MVC Controller                                mvccontroller               [C#]        Web/ASP.NET                     
+                    MVC ViewImports                               viewimports                 [C#]        Web/ASP.NET                     
+                    MVC ViewStart                                 viewstart                   [C#]        Web/ASP.NET                     
+                    NuGet Config                                  nugetconfig,nuget.config                Config                          
+                    NUnit 3 Test Item                             nunit-test                  [C#],F#,VB  Test/NUnit                      
+                    NUnit 3 Test Project                          nunit                       [C#],F#,VB  Test/NUnit                      
+                    NUnit Playwright Test Project                 nunit-playwright            [C#]        Test/NUnit/Playwright           
+                    Protocol Buffer File                          proto                                   Web/gRPC                        
+                    Razor Class Library                           razorclasslib               [C#]        Web/Razor/Library               
+                    Razor Component                               razorcomponent              [C#]        Web/ASP.NET                     
+                    Razor Page                                    page                        [C#]        Web/ASP.NET                     
+                    Razor View                                    view                        [C#]        Web/ASP.NET                     
+                    Solution File                                 sln,solution                            Solution                        
+                    Web Config                                    webconfig                               Config                          
+                    Worker Service                                worker                      [C#],F#     Common/Worker/Web               
+                    xUnit Test Project                            xunit                       [C#],F#,VB  Test/xUnit   
+
+            dotnet new sln
+                created a new sln file with the director name if none specified
+
+            dotnet new webapi -n TeborawAPI
+                creates a new api project in the solution directory and pull in the default templated files courtesy of msfy 
+
+            dotnet sln -h 
+                list all commands available to use on the soution 
+
+            dotnet sln add TeborawAPI 
+                Adds the Templated Project to the solutions file 
+
+            code .
+                if no command found open vs code cmd shift + p and type shell in the search box and select the option to instal the code shell utility 
+                will open the containing folder in vscode 
+
+
+
