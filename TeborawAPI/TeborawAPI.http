@@ -3,4 +3,7 @@
 GET {{TeborawAPI_HostAddress}}/weatherforecast/
 Accept: application/json
 
+GET {{TeborawAPI_HostAddress}}/journal/weatherforecast/
+Accept: application/json
+
 ###

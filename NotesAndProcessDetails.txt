@@ -191,5 +191,21 @@ Jan 18 2024:
                 if no command found open vs code cmd shift + p and type shell in the search box and select the option to instal the code shell utility 
                 will open the containing folder in vscode 
 
+            code color highlight were not working:
+                THe code them dark was at fault 
+                cmd shift + p and changed them to dark + isntead voila 
 
+            dotnet run:
+                from the api proj directory if you run this command it will compile and run the template projcect
+                output:
+                    Building...
+                    info: Microsoft.Hosting.Lifetime[14]
+                        Now listening on: http://localhost:5224
+                    info: Microsoft.Hosting.Lifetime[0]
+                        Application started. Press Ctrl+C to shut down.
+                    info: Microsoft.Hosting.Lifetime[0]
+                        Hosting environment: Development
+                    info: Microsoft.Hosting.Lifetime[0]
+                        Content root path: /Users/rompasaurus/TeborawWebApp/TeborawAPI
 
+                
