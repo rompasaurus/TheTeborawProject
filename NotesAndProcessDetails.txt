@@ -208,4 +208,26 @@ Jan 18 2024:
                     info: Microsoft.Hosting.Lifetime[0]
                         Content root path: /Users/rompasaurus/TeborawWebApp/TeborawAPI
 
+            http://localhost:5224/swagger
+                takes you to the swagger endpoint which should show all available api enpoints in dev mode of course
+
+            port and url mappings:
+                Held within the launchsettigns.json
                 
+                adjusted http launch settings to allow https and http specifying port 5000
+                  "profiles": {
+                    "http": {
+                    "commandName": "Project",
+                    "dotnetRunMessages": true,
+                    "launchBrowser": true,
+                    "launchUrl": "swagger",
+                    "applicationUrl": "http://localhost:5000;https://localhost:5001",
+                    "environmentVariables": {
+                        "ASPNETCORE_ENVIRONMENT": "Development"
+                    }
+                },
+
+
+            dotnet watch:
+                runs your .net application with hot reloading checking for file updates and auto pushing if available
+                will log those events as well 
