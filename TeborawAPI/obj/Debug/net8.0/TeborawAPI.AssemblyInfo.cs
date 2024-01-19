@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TeborawAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+839f436c28d8ab1c6c83ae684385a88c7d00dbbf")]
 [assembly: System.Reflection.AssemblyProductAttribute("TeborawAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TeborawAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace TeborawAPI.Controllers
 {
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class JournalController : ControllerBase
     {

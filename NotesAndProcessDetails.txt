@@ -281,3 +281,30 @@ Jan 18 2024:
                 dotnet ef database update 
                     applies all migrations existing and unapplied
                     applies the table and you should be able to view newly create column and db via connecor (datagrip)
+
+                Creeated a users controller:
+                    namespace TeborawAPI.Controllers;
+                        [ApiController]
+                        [Route("api/[controller]")] // /api/users
+                        public class UsersController : ControllerBase
+                        {
+                            private readonly DataContext context;
+
+                            public UsersController(DataContext context)
+                            {
+                                this.context = context;
+                            }
+                        }
+            
+        Routing error The routes dont get mapped without this ffs:
+            added this to the startup.cs and all is well 
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller}/{action=Index}/{id?}");
+
+        Asynchronous api operations:
+            public async Task 
+            ex:     public async Task<ActionResult<AppUser>> GetUser(int id)
+            allows the api server to pass this query to a delegate and handle other requests while sql retrieves
+            make sure to await the return call to allow the function to be delegated 
+                examle var users = await _context.Users.ToListAsync();
