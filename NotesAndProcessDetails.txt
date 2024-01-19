@@ -231,3 +231,18 @@ Jan 18 2024:
             dotnet watch:
                 runs your .net application with hot reloading checking for file updates and auto pushing if available
                 will log those events as well 
+
+Jan 18 2024:
+    Build an app with ASPNET Core and Angular from scratch Notes:
+        https certificates:
+            Are issue typically by default with the dotnet sdk if not trusted by browser run 
+            dotnet dev-certs https --trust 
+            clean than trust if not work 
+            dotnet dev-certs https --clean 
+            dotnet dev-certs https --trust 
+
+        get debugs to be more verbose 
+        appsettings.development.json > set Loglevel > default to onformational
+
+        installed the entity framework and postgres entity drivers 
+            had to install the nuget package manager and library 
