@@ -246,3 +246,38 @@ Jan 18 2024:
 
         installed the entity framework and postgres entity drivers 
             had to install the nuget package manager and library 
+
+        Double check the namespace when you make a new class or file ensure the namespace follows:
+            projectname.folder 
+
+        cmd + p > quickest way to open a file in vscode 
+
+        created dbContext with the AppUser to start and DI'd via the program.cs
+
+        builder.Services.AddDbContext<DataContext>(opts =>
+        {
+            opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+        });
+        create DefaultConnection in appsettings.json 
+              "ConnectionStrings": {
+                    //Postgres docker db  
+                    "DefaultConnection": "Server=localhost; Port=5432; Database=Teboraw; Username=Teboraw; Password =Bigmac12!;TrustServerCertificate=true"
+                }
+        Going to need to obfuscate these creds eventually 
+
+        Create first migration -> dotnet ef cli tools need to be installed first 
+            command:
+                dotnet tool install --global dotnet-ef
+
+                dotnet ef -h
+                    help options for ef and commands available 
+
+                dotnet ef migrations add InitialCreate -o Data/Migrations
+                    creates the first migration pack and scripts 
+
+                dotnet tool -list
+                    shows all dn tools available including ef cli 
+
+                dotnet ef database update 
+                    applies all migrations existing and unapplied
+                    applies the table and you should be able to view newly create column and db via connecor (datagrip)

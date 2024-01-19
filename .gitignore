@@ -1,3 +1,4 @@
 TeborawAPI/bin/*
-TeborawAPI/obj
+TeborawAPI/obj/
 TeborawAPI/obj/*
+obj/

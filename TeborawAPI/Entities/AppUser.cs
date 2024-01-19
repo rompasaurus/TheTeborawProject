@@ -1,4 +1,4 @@
-﻿namespace TeborawAPI;
+﻿namespace TeborawAPI.Entities;
 
 public class AppUser
 {
