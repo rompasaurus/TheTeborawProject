@@ -232,7 +232,7 @@ Jan 18 2024:
                 runs your .net application with hot reloading checking for file updates and auto pushing if available
                 will log those events as well 
 
-Jan 18 2024:
+Jan 19 2024:
     Build an app with ASPNET Core and Angular from scratch Notes:
         https certificates:
             Are issue typically by default with the dotnet sdk if not trusted by browser run 
@@ -308,3 +308,123 @@ Jan 18 2024:
             allows the api server to pass this query to a delegate and handle other requests while sql retrieves
             make sure to await the return call to allow the function to be delegated 
                 examle var users = await _context.Users.ToListAsync();
+
+Jan 20 2024:
+    Build an app with ASPNET Core and Angular from scratch Notes:
+        Starting with angulare install the node cli along with angular cli gonna go with angular 17 instead of 16 
+
+        npm install -g @angular/cli
+
+        ng version:
+            will show you the install angualr version number along with node version as well
+        
+        Create angular application 
+        ng new client 
+            css styling select and 
+            enable Server-Side Rendering (SSR) to allow for better web anayitics and google search availability
+            this didnt have all the features i needed including routing and app module template had to use 
+            ng new client --no-standalone --routing --ssr=true
+
+        running angular template app 
+            cd into template folder 
+            command: 
+                ng serve
+
+            index.html is the starting page for the angular > which then cascades and loads the <app-root></app-root> which a component named app.compoennt.html/ts
+
+        ctr + p allow quick open of a file 
+
+        wire up angular to hit controller endpoint
+            import the httpclienmodule in app.module 
+              imports: [
+                    BrowserModule,
+                    AppRoutingModule,
+                    HttpClientModule
+                ],
+        Slap that httpmodule into a component 
+            via DI in the conststructor 
+                constructor(private http: HttpClient){}
+            extend componet class from OnInit to add a lifecycle step
+            implement oninit method and try out a quick http get pull 
+                this.http.get('https://localhost:5001/api/users').subscribe({
+                    next: response => this.users = response,
+                    error: error => console.log("Failed to pull user data error: ", error),
+                    complete: () => console.log('User Request Completed! ')
+                })
+            make sure api is running > dotnet watch 
+            gonna invariably get a cors cross site rejection error need to setup dotnet to allow specified origins to pull from api
+
+        Addressing cors errors 
+            is done on the api side add a header to the response that allow angular to trust data 
+            program.cs 
+                add the cors service 
+                Code:
+                    builder.Services.AddCors();
+                
+                create the middleware to inject the cors headers prior to sending back a response 
+                add code just before the mapCOntroller call
+                Code:
+                    app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
+
+                request completes succ you can check the data passed back via 
+                debug > network tab > click users form name list > preview tab to view data 
+                [
+                    {
+                        "id": 2,
+                        "userName": "Bob"
+                    },
+                    {
+                        "id": 3,
+                        "userName": "Tom"
+                    },
+                    {
+                        "id": 4,
+                        "userName": "Jane"
+                    }
+                ]
+
+                quick angular tip just type the html tag name without the <> and you can add a class by adding .class name and then tab to auto create the html element 
+                ie:
+                    ul.ulClass name > turns into <ul class="ulClassNmae"></ul>
+
+                add users to page and iterate over all users 
+                    <li class="bold" *ngFor="let user of users">
+                        {{user.id}} - {{user.userName}}
+                    </li>
+                    *ngFor is the key thing to not allows you iterate of a list of objects
+                    FYI > .net api calls return json data with camelcasing by default 
+                        userName insteaed of username 
+                
+        Add Bootstrap Styling 
+            that has angular implementations
+            ngx-bootstrap
+            https://valor-software.com/ngx-bootstrap/#/
+            cli command: 
+                    ng add ngx-bootstrap
+                received erro auto way went manual way instead 
+                    npm install ngx-bootstrap --save
+                imported the module manually
+                added bootstrap.css 
+                angular.json:
+                    "styles": [
+                        "src/styles.css",
+                        "./node_modules/font-awesome/css/font-awesome.css",
+                        "./node_modules/bootstrap/dist/css/bootstrap.min.css"
+                        ],
+                update app.module with:
+                imported module via app.module 
+                    mport { TooltipModule } from 'ngx-bootstrap/tooltip';
+                    imports: [ TooltipModule.forRoot(), BrowserAnimationsModule]
+
+                package.json should have entry for 
+                    "ngx-bootstrap": "^12.0.0",
+            install fontawesome 
+                npm install fontawesome
+
+
+        Error Port 4200 is already in use.:
+            sudo kill -9 $(sudo lsof -t -i:4200) 
+            to kill rogue angular app
+
+        Add ssl and certs to angular application:
+            
