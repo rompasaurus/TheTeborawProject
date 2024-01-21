@@ -426,5 +426,45 @@ Jan 20 2024:
             sudo kill -9 $(sudo lsof -t -i:4200) 
             to kill rogue angular app
 
+
+Jan 20 2024:
+    Build an app with ASPNET Core and Angular from scratch Notes:
         Add ssl and certs to angular application:
-            
+
+    install mkcert:
+        https://github.com/FiloSottile/mkcert
+        brew install mkcert
+        brew install nss # if you use Firefox   
+
+    make ssl directory in the client folder
+        mkdir ssl
+
+    install the cert authority from the ssl directory 
+        mkcert -install 
+
+    Create the certificate for localhost for now domain later 
+        mkcert localhost
+
+        creates both a publich and private key for specified domain (localhost)
+
+    Wire in cert to angular.json
+        inside of "server":
+        "serve": {
+            "options": {
+                "ssl": true,
+                "sslCert": "./ssl/localhost.pem"
+                "sslKey": "./ssl/localhost-key.pem"
+            },
+        restart angular app and site should auto redirect to https with a trusted cert 
+        be aware this is a self signed certificate 
+
+    fix cors to allow  
+        ssl error:
+            Access to XMLHttpRequest at 'https://localhost:5001/api/users' from origin 'https://localhost:4200' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+       
+        with the cert you will need to update the api to allow ssl connections 
+
+        change: 
+        app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
+        to ->
+        app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200"));
