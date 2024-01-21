@@ -8,11 +8,11 @@ using TeborawAPI.Data;
 
 #nullable disable
 
-namespace TeborawAPI.Data.Migrations
+namespace TeborawAPI.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240119152944_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20240121152422_initCommit")]
+    partial class initCommit
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -31,6 +31,14 @@ namespace TeborawAPI.Data.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<byte[]>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("bytea");
 
                     b.Property<string>("UserName")
                         .IsRequired()

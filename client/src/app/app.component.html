@@ -1,7 +1,13 @@
 <h1>{{title}}</h1>
-<ul class="testclass">
-  <li class="bold" *ngFor="let user of users">
-    {{user.id}} - {{user.userName}}
+<ul class="testclass" *ngFor="let user of users">
+  <li class="bold" >
+    {{user.id}}: {{user.userName}} 
+  </li>
+  <li>
+    Salt: {{user.passwordSalt}}
+  </li>
+  <li>
+    Hash: {{user.passwordHash}} 
   </li>
 </ul>
 <ul class="ulClassNmae"></ul>

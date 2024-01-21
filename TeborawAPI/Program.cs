@@ -1,21 +1,13 @@
-using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using TeborawAPI.Data;
-using TeborawAPI.Entities;
+using TeborawAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
-builder.Services.AddCors();
-builder.Services.AddDbContext<DataContext>(opts =>
-{
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+builder.Services.AddApplicationsServices(builder.Configuration);
+builder.Services.AddIdentityServices(builder.Configuration);
+
+
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -23,14 +15,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200"));
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader()
+    .AllowAnyMethod().WithOrigins("https://localhost:4200"));
+
+//The location of these need to be after cors establishment but prior to route and controller mapping 
+// Are you who you say you are 
+app.UseAuthentication();
+// What are you allowed to do
+app.UseAuthorization();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller}/{action=Index}/{id?}");
 
-app.UseRouting();
-app.UseHttpsRedirection();
-//app.UseMvc();
+
+
+
 app.Run();
-//app.UseRouting();
 

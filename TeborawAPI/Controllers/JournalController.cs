@@ -1,11 +1,8 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace TeborawAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class JournalController : ControllerBase
+    public class JournalController : BaseAPIController
     {
         private readonly ILogger<JournalController> _logger;
         private static readonly string[] Summaries = new[]

@@ -427,7 +427,7 @@ Jan 20 2024:
             to kill rogue angular app
 
 
-Jan 20 2024:
+Jan 21 2024:
     Build an app with ASPNET Core and Angular from scratch Notes:
         Add ssl and certs to angular application:
 
@@ -468,3 +468,318 @@ Jan 20 2024:
         app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
         to ->
         app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200"));
+
+    AUTHENTICATION BABY!!
+        Learning Objectives 
+            how to store pw's in db hint as a hash with a salt string to randomize the hash a bit 
+            using inheritance 
+            validation 
+            json web tokens 
+            c# services 
+
+        add byte arrays props to the user class 
+                public Byte PasswordHash { get; set; }
+                public Byte PasswordSalt { get; set; }
+
+        Create a migration to update the table entry
+            Create migrations via command:
+                dotnet ef migrations add UserPasswordAdded
+            Update database 
+                dotnet ef database update
+
+        Create BaseAPiCOntroller to simplify and not repeat the route and api declarations 
+            create the class then inherit from it ex:
+                public class UsersController : BaseAPIController
+
+        create an accounts controller to allow for user registration with a passwor dand setup hashing:
+            public class AccountsController: BaseAPIController
+            using var hmac = new HMACSHA3_512();
+            ##Using keyword allows for the hmac object to be disposed of after use
+            any classes that implement the idisposable method need a dispose() call to be initated
+            using limits the scope of the variable to the function intantiate within and auto displose upon execution
+
+        postman usage:
+            you can set a url variable globally to use ion all you endpoint tests via:
+                select main project in the collention and go to the variabl tab on the main page add a :
+                    url variabl with intial value https://localhost:5001
+
+                can inject into a endpoint test via formulating url as :
+                    {{url}}/api/account/register
+
+            parameters need to be passed via query string 
+                Example
+                Register(string username, string password)
+                need to be request via 
+                /api/register?username=examplname&password=expassword
+
+        register error
+            selected wrong sha crypto  full function for ref:
+                [HttpPost("register")] // api/account/register
+                public async Task<ActionResult<AppUser>> Register(string username, string password)
+                {
+                    using var hmac = new HMACSHA512();
+                    var user = new AppUser()
+                    {
+                        UserName = username,
+                        PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password)),
+                        PasswordSalt = hmac.Key
+                    };
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                    return user;
+                }
+
+        Adding dto's and validations 
+            create dir dtos and add reigsterdto 
+            public class RegisterDTO
+            {
+                public string Username { get; set; }
+                public string Password { get; set; }
+            }
+            json sends in lower case for properties, dtop with upper case begins still bind as lowercase in json 
+        
+        Validate username and pw is not empty
+            validation ad the db level
+                add the [Required] decorator to the entitity data model 
+                    [Required]
+                    public string UserName {get; set;}
+                you have to create a new migration to establish this change 
+            
+            At the dto level server side:
+                add same required decorator to the sdt example:
+                    public class RegisterDTO
+                    {
+                        [Required]
+                        public string Username { get; set; }
+                        [Required]
+                        public string Password { get; set; }
+                    }
+                get a nice error whe passing in a blank user or pw 
+
+                    "title": "One or more validation errors occurred.",
+                    "status": 400,
+                    "errors": {
+                        "Password": [
+                            "The Password field is required."
+                        ],
+                        "Username": [
+                            "The Username field is required."
+                        ]
+                    },
+                [ApiController]
+                decorator enables this validation to occur on the Controllers
+                without this decorator it wont do these checks and [fromBody] would need to be added to the controllers endpoint for it to map properly to a specified dto object
+                this decorator automatically checks the model state that is establish when the endpoint is reached and dtop ios mapped 
+
+        Setup login endpoint:  
+            see code, validation for user and pass in place and hash compute and varification established here
+                [HttpPost("login")]
+                public async Task<ActionResult<AppUser>> Login(LoginDTO loginDTO)
+                {
+                    var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName.ToLower() == loginDTO.Username.ToLower());
+                    
+                    if (user == null) return Unauthorized("Invalid Username");
+                    //validate password by reversing the hash algo 
+                    using var hmac = new HMACSHA512(user.PasswordSalt);
+                    //pull the compute hash of user imput pw  
+                    var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDTO.Password));
+
+                    for (int i = 0; i < computedHash.Length; i++)
+                    {
+                        if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("Invalid password");
+                    }
+                    
+                    return user;
+
+                }
+
+        JWT > JSON Web Tokens 
+            Structure 3 parts
+                Header contains algo and tokent type: 
+                    {
+                        "alg": "HS512",
+                        "typ": "JWT"
+                    }
+                Payload Data
+                    {
+                        "nameid" : "lola"
+                        "role" : "Member"
+                        //time stamps for expiry dates of key and session nbf i the the time at wich token cannot be used before 
+                        "nbf": 134653462,
+                        "exp": 136345645,
+                        "iat": 246357357,
+                    }
+                Verify Signature 
+                    HMACSHA512(
+                        base64UrlEncode(header) + "." +
+                        base64UrlEncode(paylod),
+                        your-256-secret
+                    ) secret base64 encoded 
+
+            Stages of auth 
+                1 user logs in passing in username and password
+                2 server receives login data and validates that password 
+                3 server returns a token in respons if user is authenticate 
+                4 client/user receives the jwt in response and stores locally passing the token back with each http subsequent http requests
+                the request are sent with an additional authentication header portion
+                5 the server then upon request uses the jwt header and validates with that key instead of the user needing to submit pw         information each time  
+
+            JWT Beneftis:
+                no session to manage jwts are self contained tokens 
+                portable:  a single token can be used with multiplpe backends 
+                no cookies required, mobile firendly as phone dont use cookies 
+                performance once token established no need for more db calls to validate user auth 
+
+            Token Service Creation:
+                create the token interface 
+                    public interface ITokenService
+                    {
+                        string CreateToken(AppUser user);
+                    }
+                Create the service that built using the interface 
+                    public class TokenService: ITokenService
+                    {
+                        public string CreateToken(AppUser user)
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
+                Imject the service to the program.cs 
+                    builder.services.
+                        AddTransient:
+                            A very short lived service whose lifecycle is just for the duration of its call and use then it is dsipose 
+                        AddScope: the standard 
+                            A longer living service that lasts the duration of the https request meaning a specific controller call 
+                        AddSingleton:
+                            A service is instantiated once upon itself at the start of the api program launch and is never disposed ofbut only one instance exists typically better to dsipose after use to free memory especially with services are not need on a constant basis.
+                            caching services typicall fall under this use case for quick data retrieval
+
+                    Code: 
+                    builder.Services.AddScoped<ITokenService, TokenService>();
+
+                Build out service using config key:
+                    creating a service as an interface will help later with testing 
+
+                    Install System.IdentityModel.Tokens.Jwt by Microsoft
+                        alolows you to establish a secret key for signing jwts tokens 
+
+                    public class TokenService: ITokenService
+                    {
+                        private readonly SymmetricSecurityKey _key;
+                        
+                        public TokenService(IConfiguration config)
+                        {
+                            _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
+                        }
+                        public string CreateToken(AppUser user)
+                        {
+                            // Add the users claimset, need to atleast have a username or id identifier further claims will be added later once funcitionailty requiring it is established
+                            var claims = new List<Claim>()
+                            {
+                                new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
+                            };
+                            //Establish the highest sha 512 ecryption key generation for token signature 
+                            var credentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
+                            //Set expiry and issuance dates along with claims
+                            var tokenDescriptor = new SecurityTokenDescriptor()
+                            {
+                                Subject = new ClaimsIdentity(claims),
+                                Expires = DateTime.Now.AddDays(7),
+                                SigningCredentials = credentials
+                            };
+
+                            var tokenHandler = new JwtSecurityTokenHandler();
+                            var token = tokenHandler.CreateToken(tokenDescriptor);
+                            //using System.IdentityModel.Tokens.Jwt; takes provided token details and establishes a properly formatted jwt token 
+                            return tokenHandler.WriteToken(token);
+                        }
+                    }
+
+            Establish a dto for user and associated jwt
+                public class UserDTO
+                {
+                    public string Username { get; set; }
+                    public string Token { get; set; }
+
+                }
+
+            inject the Itoken service to the controller 
+                private readonly ITokenService _tokenService;
+
+                public AccountController(DataContext context, ITokenService tokenService)
+                {
+                    _context = context;
+                    _tokenService = tokenService;
+                }
+            replace everywhen in the accountcontroller a user is return and return instead a userDTO with a generated token 
+                return new UserDTO()
+                {
+                    Username = user.UserName,
+                    Token = _tokenService.CreateToken(user)
+                };
+            Create you token key secret but just for development for now in appsettings.json.developmen
+                {
+                    "Logging": {
+                        "LogLevel": {
+                        "Default": "Information",
+                        "Microsoft.AspNetCore": "Information"
+                        }
+                    },
+                    "TokenKey": "dontevenbothertryingtoguessthiscuzyoucantitssosecretandifyoutellanyoneillkillyou"
+                }
+            rebuild code and  login endpoint upon successful login should return username and the token 
+            example response :
+                {
+                    "username": "dildo",
+                    "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJkaWxkbyIsIm5iZiI6MTcwNTg2MzY3N
+                }iwiZXhwIjoxNzA2NDY4NDc2LCJpYXQiOjE3MDU4NjM2NzZ9.YJJKK9j0QOzuXW421ejToDOOKsqzH2Qr2I49odh0vTOUUeHBRBLWRl2wNkJ9THElLRjbmQs_hMnbkWZCWKl5mQ"
+
+            
+        How to peak inside a token block:
+            jwt.ms > go to this site 
+            heres example output
+                paste the token here 
+                {
+                    "alg": "HS512",
+                    "typ": "JWT"
+                }.{
+                    "nameid": "dildo",
+                    "nbf": 1705863676,
+                    "exp": 1706468476,
+                    "iat": 1705863676
+                }.[Signature]
+
+        Authorize the routes:
+            add the decorator to the routes in the controller 
+            [Authorize] either on the route or on the controller as a whole
+
+            need to then plug in the middleware that routes the authorize right to execute the routes
+            
+        Setup Authorize middleware for jwt bearer tokens 
+            install nuget package Microsoft.AspNetCore.Authentication.JwtBearer by Microsoft 8.00
+            Program.cs
+            //The location of these need to be after cors establishment but prior to route and controller mapping 
+            // Are you who you say you are 
+            app.UseAuthentication();
+            // What are you allowed to do
+            app.UseAuthorization();
+            also 
+                app.UseHttpsRedirection();
+                app.UseStaticFiles();
+                app.UseRouting();
+                needs to be setup prior to auth establishment in progrma.cs
+
+        Test the route:
+            Get the token from the login route 
+            then use that toke value to add to get request to the users list route in postman 
+
+            add key: Authorization
+                value: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJkaWxkbyIsIm5iZiI6MTcwNTg2NjMyNSwiZXhwIjoxNzA2NDcxMTI1LCJpYXQiOjE3MDU4NjYzMjV9.JQV2KIRmL7DL1JL9565ankWKKBMfHU31dWiAyp8tbo6_861tPDAAdr6SftrEN-a9dtsUqcRxbEUdy1-rNxKeGw"
+            
+            bear <spce> token
+            the space is critical 
+
+            or just go to the authorization tab at the top in postmat on the route and paste in the token optain from the login response /api/login with succ login 
+
+        Adding extension methods and cleanup program.cs 
+            

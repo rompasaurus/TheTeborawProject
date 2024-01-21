@@ -1,21 +1,18 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Data;
 using TeborawAPI.Entities;
 
 namespace TeborawAPI.Controllers;
-
-[ApiController]
-[Route("api/[controller]")] // /api/users
-public class UsersController : ControllerBase
+public class UsersController : BaseAPIController
 {
     private readonly DataContext _context;
-
     public UsersController(DataContext context)
     {
         _context = context;
     }
-
+    
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers()
     {
@@ -23,6 +20,7 @@ public class UsersController : ControllerBase
         return users;
     }
 
+    [Authorize]
     [HttpGet("{id}")] // /api/users/2
     public async Task<ActionResult<AppUser>> GetUser(int id)
     {
