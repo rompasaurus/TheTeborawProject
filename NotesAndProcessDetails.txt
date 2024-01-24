@@ -782,4 +782,183 @@ Jan 21 2024:
             or just go to the authorization tab at the top in postmat on the route and paste in the token optain from the login response /api/login with succ login 
 
         Adding extension methods and cleanup program.cs 
+
+            public static class IdentityServiceExtensions
+            {
+                public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration config)
+                {
+                    // Middleware to tie into the [Authorize] Routes called to validate jwt issuance nonexpiry and user
+                    services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                        .AddJwtBearer(opts =>
+                        {
+                            opts.TokenValidationParameters = new TokenValidationParameters
+                            {
+                                ValidateIssuerSigningKey = true,
+                                IssuerSigningKey = new SymmetricSecurityKey(Encoding
+                                    .UTF8.GetBytes(config["TokenKey"])),
+                                ValidateIssuer = false,
+                                ValidateAudience = false
+                            };
+                        });
+                    return services;
+                }
+            }
+
+            use this in the program.cs with the new extensions 
+            builder.Services.AddApplicationsServices(builder.Configuration);
+            builder.Services.AddIdentityServices(builder.Configuration);
+
+January 24 2024:
+    Back at it after a 3 day hiatus ready to get the next section down
+
+    Build an app with ASPNET Core and Angular from scratch Notes:
+    
+    Section 2 Client login and register:
+    Angular CLient work
+
+    Commands:
+        Create an angular component:
+            ng generate component nav 
+            shorthand command:
+            ng g c nave
+                This will create a set of 4 files the html, css, ts and spec.ts test file 
+                and will place in the current directory creating a folder name nav
+
+        Angular dry run to see what generates:
+            ng g c --skip-test --dry-run
+                this will not produce and files just a preview of wat will be produced the no tests leavs out the spec file as well 
+
+    Eror:
+        angular doesnt work with node 21 
+        source ~/.nvm/nvm.sh
+        to enable nvm 
+        nvm install 20 
+        installs node 20 
+        nvm use 20 
+        switches to 20 node version 
+
+        removed node_modules and package lock just to be reset to proper versioning
+
+    Fixing bootstrap:
+        npm install bootstrap
+        npm install font-awesome 
             
+            add this to style.css 
+            @import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+            @import '../node_modules/font-awesome/css/font-awesome.min.css';
+    
+    Moving the maoin page contet under nav bar:
+        wrap the app component content in
+        div class="container" style="margin-top: 50px;"> 
+
+    Wire up the login form at the navbar:
+        Import angular forms in app.module
+        instgall angular forms 
+        npm install @angular/forms --save 
+
+        convert the form to and angular form
+
+        create generic model form now in the nav component 
+            model : any = {}
+        establish login function 
+            login(){}
+        
+        Set the bootstrap nave bar login as a form :
+        <form #loginForm ="ngForm" class="d-flex">
+
+        wire the submit buttin to the login fucntion and make ng submit
+        add in (ngSubmit)="login()"  to the form 
+        <form #loginForm ="ngForm" class="d-flex" (ngSubmit)="login()" autocomplete="off">
+
+        Add the ngmoduel to the inputs to 2 way data bind 
+        <input 
+            name = "username"
+            [(ngModel)]="model.username"
+            class="form-control me-2" 
+            type="search" 
+            placeholder="username" 
+            aria-label="Login Username">
+        <input 
+            name = "password"
+            [(ngModel)]="model.password"
+            class="form-control me-2" 
+            type="search" 
+            placeholder="password" 
+            aria-label="Password">
+        <button class="btn btn-outline-success" type="submit">Login</button>
+
+
+    Creating Angular services to handle http requests:
+        create folder app/_services
+
+        ang cli generate service 
+        ng g service or ng s 
+        command:
+            ng g s _services/account
+            output: 
+                CREATE src/app/_services/account.service.spec.ts (362 bytes)
+                CREATE src/app/_services/account.service.ts (136 bytes)
+        
+        Benefits of services :
+            they are retained for the lifetime of tha application 
+            unlike component which are created and destro per session after use 
+            good for storign state 
+            services are singletons 
+
+        init  account service.ts:
+                @Injectable({
+                providedIn: 'root'
+            })
+                export class AccountService {
+                baseUrl = "https://localhot:L5001/api/"
+
+                constructor(private http: HttpClient) { }
+
+                login(model: any){
+                    return this.http.post(this.baseUrl + 'account/login', model)
+                }
+            }
+
+        Slap that service into the nave bar yo:
+            constructor(private accoutService: AccountService){}
+
+              login(){
+                    this.accoutService.login(this.model).subscribe({
+                    next: response => {
+                        console.log(response);
+                        this.loggedIn = true;
+                    },
+                    error: error => {
+                        console.log(error)
+                    }
+                })
+    Update ui upon login success:
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0" *ngIf="loggedIn">
+        will show or hide nested members based upon logged in boolean value
+
+        ngif add it and tie to loggedIn
+        <form #loginForm ="ngForm" class="d-flex" (ngSubmit)="login()" autocomplete="off" *ngIf="!loggedIn">
+
+        !!ngif comlete removes the element from the dom not just hide it
+        [hidden]="loggedIn" would simply hide it 
+
+
+    Getting the dropdowns to work:
+        angular bootstrap 
+            npm install ngx-bootstrap 
+
+            ng add ngx-bootstrap  --component dropdowns
+
+            the auto doesnt work in t ang 17 need to do it manualy 
+            waht a pain its not that big a pain 
+
+        Add the dropdwon directive to the form modules 
+            <div class="dropdown" *ngIf="loggedIn" dropdwon>
+                <a class="dropdown-toggle text-light" dropdownToggle>Welcome {{model.username}} </a>
+                <div class="dropdown-menu" *dropdownMenu>
+                    <a class="dropdown-item"> Edit Profile</a>
+                    <a class="dropdown-item" (click)="logout()"> Logout </a>
+                </div>
+            </div>
+
+    Error Dropdown does not want to show still after manual install
