@@ -962,3 +962,184 @@ January 24 2024:
             </div>
 
     Error Dropdown does not want to show still after manual install
+
+January 25 2024:
+    Build an app with ASPNET Core and Angular from scratch Notes:
+    
+    Time to fix bootstrap js 
+        was missing the right imports in the app.module 
+            BrowserAnimationsModule,
+            BsDropdownModule.forRoot(),
+        getting a null error now which .. is progress
+            nav.component.ts:20 ERROR NullInjectorError: R3InjectorError(_AppModule)[_BsDropdownDirective -> _BsDropdownDirective]:
+            it would hel if i spelled dropdown correctly
+        
+        Dropdown html workin: 
+        <div class="dropdown" *ngIf="loggedIn" class="dropdown" dropdown>
+        <a class="dropdown-toggle text-light text-decoration-none" dropdownToggle>Welcome {{model.username}} </a>
+        <div class="dropdown-menu" *dropdownMenu>
+            <a class="dropdown-item"> Edit Profile</a>
+            <a class="dropdown-item" (click)="logout()"> Logout </a>
+        </div>
+        </div>
+
+        Onwards!
+        its dropdown not dropdrown 
+
+    Understanding Observables:
+        Promises vs Observable 
+            Promise: 
+                Provides a single future value 
+                not lazy will load everytime 
+                can not cancel 
+            Observables:
+                Emits multiple values overtime can stream changes essentially
+                lazy 
+                able to cancel 
+                can use with map filter reduce and other operators
+
+        rxjs:
+            reactive extensions for javascript 
+            allows you to pipe the data from an observable and translate/transform it into a workable data format
+
+        http subscription ->
+            will return and error message if the http response is > 200-300 response range 
+        
+        you can make the http request a promise instead not recommended 
+
+        Async pipe:
+            example:
+                <li *ngFor= 'let member of service.getMembers() | async'> {member.username}}</>
+            this will auto subscribe and unsubscribe from the observable. 
+
+    Storing user token data browser side:
+        AccountService:
+            if(user) localStorage.setItem('user', JSON.stringify(user));
+        Creating a dtop model for user in the front end:
+            create user.ts interface 
+                export interface User {
+                    username: string;
+                    token: string;
+                }
+            you can now use the user object and have it mapped as the rssponse in the user service 
+            you need to prime http to expect this type of respnse by declaring it as a wrapper 
+                return this.http.post<User>(this.baseUrl + 'account/login', model).pipe(
+
+    Create a user information storage observable
+        to broadcast if a user is logged in. 
+        Crete Observable in account service.ts:
+        $ symbol in currentUser$ denotes a subscriber
+            private currentUserSource = new BehaviorSubject<User | null>(null);
+            currentUser$ = this.currentUserSource.asObservable();
+            constructor(private http: HttpClient) { }
+
+                note the <User | null> 
+                    this allow you to set an object as 2 possible type (or more) allowing it to be decalred as a null initially without ts yelling
+
+        Set the uyser observable at login :
+            this.currentUserSource.next(user);
+
+            setCurrentUser(user: User){
+                this.currentUserSource.next(user);
+            }
+
+        inject the account service to the app.component to allow for the user and it logged in status to be globally accessable
+
+        ! turns off typescript safety , but beware 
+            ex: 
+                const user: User = JSON.parse(localStorage.getItem('user')!)
+            the more safe better way is:
+                const userString = localStorage.getItem('user');
+                if(!userString) return;
+                const user: User = JSON.parse(userString);
+                this.accountService.setCurrentUser(user);
+
+        subscribe to the current user to keep up to date on whether the user is logged in or not:
+            nav.component:
+                getCurrentUser(){
+                    this.accountService.currentUser$.subscribe({
+                    next: user => this.loggedIn = !!user,
+                    error: error => console.log(error)
+                    })
+                }
+                ngOnInit(): void {
+                    this.getCurrentUser();
+                }
+                
+                !!user returns true if the user exists 
+
+            now the user will persist accross browser refreshing and local storage in chrome shows the user and the token
+
+        Unsubscribe to the account service:
+            Subscribtions need to be canceled to avoid memory leaks 
+                unless its an http request > those actually complete closing the sub 
+            own observables need manages 
+
+            convert loggedin boolean to currentUser$ observable 
+            nav.component:
+                currentUser$ : Observable<User | null> = of(null)
+                    of(null) allow ang to init a variable that is an observable with a type of null to start with bypass the type checks 
+
+            remove getCurrentUser with 
+                ngOnInit(): void {
+                    this.currentUser$ = this.accountService.currentUser$;
+                }
+            swap the islogged in flag on the html template with the observable instead
+                *ngIf="loggedIn" -> *ngIf="currentUser$ | async"
+
+                <div class="dropdown" *ngIf="currentUser$ | async" class="dropdown" dropdown>
+                <a class="dropdown-toggle text-light text-decoration-none" dropdownToggle>Welcome {{(currentUser$ | async)?.username}} </a>
+            
+            this is pointless you can just use the account service directly 
+
+                in nav component change the accountService to public to allo for it to be access from the template
+                constructor(private accountService: AccountService){}
+                  to 
+                constructor(public accountService: AccountService){}
+
+                can be accessed like this now instead 
+                    <div class="dropdown" *ngIf="accountService.currentUser$ | async" class="dropdown" dropdown>
+                    <a class="dropdown-toggle text-light text-decoration-none" dropdownToggle>Welcome {{(accountService.currentUser$ | async)?.username}} </a>
+
+        Create home compoenent:
+            ng g c home 
+            CREATE src/app/home/home.component.css (0 bytes)
+            CREATE src/app/home/home.component.html (19 bytes)
+            CREATE src/app/home/home.component.spec.ts (587 bytes)
+            CREATE src/app/home/home.component.ts (191 bytes)
+            UPDATE src/app/app.module.ts (1019 bytes)
+
+            create buttons to register and a toggle to show these buttons if the not logged in 
+
+            homeComponent:
+                registerMode = false;
+                registerToggle(){
+                    this.registerMode = !this.registerMode;
+                }
+            Apply the ngif toggle to buttons 
+                <div class="container mt-5">
+                <div *ngIf="!registerMode" style="text-align: center;">
+                    <h1> Welcome yo Teboraw! The one place you need to track your thoughts</h1>
+                    <p class="lead">Sign up and start journalling</p>
+                    <div class="text-center">
+                        <button (click)="registerToggle()" class="btn btn-primary btn-lg me-2"> Register</button>
+                        <button class="btn btn-primary btn-info btn-lg">Learn More</button>
+                    </div>
+                </div>
+                <div *ngIf="registerMode" class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-4">
+                            <p>Register FOrm GOes here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            make sure to add the component to the main appcomponet.html page
+            
+        new error to hunt down:
+            Solve ReferenceError: localStorage is not defined 
+            the login box doesnt come back when user logs out 
+            after my jog tomorrow this is the first thing I set to 
+
+        

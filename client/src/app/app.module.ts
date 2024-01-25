@@ -7,21 +7,23 @@ import { HttpClientModule } from '@angular/common/http';
 import { NavComponent } from './nav/nav.component';
 import { FormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { CollapseModule } from 'ngx-bootstrap/collapse';
+import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
+import { HomeComponent } from './home/home.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    NavComponent
+    NavComponent,
+    HomeComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    TooltipModule.forRoot(),
     FormsModule,
+    TooltipModule.forRoot(),
     BrowserAnimationsModule,
-    CollapseModule.forRoot(),
+    BsDropdownModule.forRoot(),
   ],
   providers: [
     provideClientHydration()

@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
       <a class="navbar-brand" href="#">Teboraw</a>
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0" *ngIf="loggedIn">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0" >
           <li class="nav-item">
             <a class="nav-link active" aria-current="page" href="#">Home</a>
           </li>
@@ -11,18 +11,18 @@
           <li class="nav-item">
             <a class="nav-link" href="#">About</a>
           </li>
-          <li class="nav-item">
+          <li *ngIf="accountService.currentUser$ | async" class="nav-item">
             <a class="nav-link" (click)="logout()"> Logout </a>
           </li>
         </ul>
-        <div class="dropdown" *ngIf="loggedIn" dropdwon>
-          <a class="dropdown-toggle text-light text-decoration-none" dropdownToggle>Welcome {{model.username}} </a>
+        <div class="dropdown" *ngIf="accountService.currentUser$ | async" class="dropdown" dropdown>
+          <a class="dropdown-toggle text-light text-decoration-none" dropdownToggle>Welcome {{(accountService.currentUser$ | async)?.username}} </a>
           <div class="dropdown-menu" *dropdownMenu>
             <a class="dropdown-item"> Edit Profile</a>
             <a class="dropdown-item" (click)="logout()"> Logout </a>
           </div>
         </div>
-        <form #loginForm ="ngForm" class="d-flex" (ngSubmit)="login()" autocomplete="off" *ngIf="!loggedIn">
+        <form #loginForm ="ngForm" class="d-flex" (ngSubmit)="login()" autocomplete="off" *ngIf="!(accountService.currentUser$ | async)">
           <input 
             name = "username"
             [(ngModel)]="model.username"

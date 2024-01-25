@@ -1,27 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { AccountService } from '../_services/account.service';
-import { response } from 'express';
+import { BsDropdownConfig } from 'ngx-bootstrap/dropdown';
 
 @Component({
   selector: 'app-nav',
   templateUrl: './nav.component.html',
-  styleUrl: './nav.component.css'
+  styleUrl: './nav.component.css',
+  providers: [{ provide: BsDropdownConfig, useValue: { isAnimated: true, autoClose: true } }]
 })
 export class NavComponent implements OnInit {
   model : any = {}
-  loggedIn  = false;
-
-  constructor(private accoutService: AccountService){}
+  constructor(public accountService: AccountService){}
 
   ngOnInit(): void {
-    
   }
 
+
   login(){
-    this.accoutService.login(this.model).subscribe({
+    this.accountService.login(this.model).subscribe({
       next: response => {
         console.log(response);
-        this.loggedIn = true;
       },
       error: error => {
         console.log(error)
@@ -30,6 +28,6 @@ export class NavComponent implements OnInit {
   }
 
   logout(){
-    this.loggedIn = false;
+    this.accountService.logout();
   }
 }
