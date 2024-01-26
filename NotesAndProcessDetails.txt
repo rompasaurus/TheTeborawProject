@@ -1275,3 +1275,207 @@ January 26, 2024
                 return user;
             })
     
+    implementing routing:
+        generate a few components:
+            ng g c member/member-list
+
+            ng g c member/member-detail
+
+            ng g c lists
+
+            ng g c messages
+
+        modify app.routing create the routes for the new compoenents
+            !!order matters the ** at the end will catch any routes that dont fit the bill and reroute to the home component
+            const routes: Routes = [
+                {path: '', component: HomeComponent},
+                {path: 'members', component: MemberListComponent},
+                {path: 'members/:id', component: MemberDetailComponent},
+                {path: 'lists', component: ListsComponent},
+                {path: 'messages', component: MessagesComponent},
+                {path: '**', component: HomeComponent, pathMatch: 'full'},
+            ];
+
+            pathMatch: 'full'}, ensur this for last route to prevent circular link rerouting 
+
+        apply the router link to the navbar links using routerLink
+            example:
+            <li class="nav-item">
+                <a class="nav-link" routerLink="/members">Members</a>
+            </li>
+
+        make nav link active upon click and router loaded: 
+            add routerLinkActive = "active"
+            example:
+                <a class="nav-link" routerLink="/lists" routerLinkActive = "active">Lists</a>
+        
+        Route upon login:
+            navcomponent:
+                inject the router 
+                private router: Router
+            route at login fn:
+              login(){
+                this.accountService.login(this.model).subscribe({
+                next: response => {
+                    this.router.navigateByUrl('/members')
+                    console.log(response);
+                },
+                error: error => {
+                    console.log(error)
+                }
+                })
+            }
+            the / in the route is critical it ids the route as a root route thats relative, will not cchain to the existing route 
+
+    Apply toast notifications on errors:
+        install ngx-toastr:
+            npm install ngx-toastr --save 
+            npm install @angular/animations --save
+
+        add the toast to the css import in angular.json 
+            "styles": [
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/ngx-toastr/toastr.css",
+              "src/styles.css"
+            ],
+        
+        import style into the css :
+            @import "../node_modules/ngx-bootstrap/datepicker/bs-datepicker.css";
+            @import "../node_modules/ngx-toastr/toastr.css";
+
+        add the toastr module to app.module:
+            ToastrModule.forRoot(),
+
+        implement in the navcomponent and register :
+            inject toastr : private toast: ToastrService
+            add  toast to the error response 
+                this.accountService.login(this.model).subscribe({
+                    next: _ => this.router.navigateByUrl('/members'),
+                    error: error => this.toastr.error(error.error)
+                })
+
+        adjust toast positioning in _AppModule:
+            ToastrModule.forRoot({
+                positionClass: 'toast-bottom-right'
+            }),
+
+        address issue where toas display object object when register attempt with blank user and password
+            cause  there are multiple errors so c# returns a list of error that needs to be mapped instead 
+            this will be addressed later
+
+    Route Gaurds for authorization:
+        remember client side security is not really security that needs done on the api side.
+        ang cli command to add gaurd 
+        ng g gaurd or ng g g 
+        example:
+            ng g g _gaurds/auth
+            select canActivate
+
+        This create skeleton ts file with 
+            import { CanActivateFn } from '@angular/router';
+                export const authGuard: CanActivateFn = (route, state) => {
+                return true;
+            };
+
+        Here you can specify the routes that need an account service check to allow the route to load and specify a toastr message is auth is not permitted 
+
+        inject the toastr and accountServices:  
+            const accountService = inject(AccountService);
+            const toastr = inject(ToastrService);
+        entirety of the gaurd:
+        basically a boolean generator mapped to the user service to determin if ther is a current user 
+        export const authGuard: CanActivateFn = (route, state) => {
+            const accountService = inject(AccountService);
+            const toastr = inject(ToastrService);
+            return accountService.currentUser$.pipe(
+                map(user => {
+                if(user) return true;
+                else{
+                    toastr.error('You shall not pass!')
+                    return false;
+                }
+                })
+            )
+        };
+
+    Attach the route gaurd to the routes in the app.routes:
+        {path: 'members', component: MemberListComponent, canActivate: [authGuard]},
+
+        canActivate: [authGuard] specifies the auth gaurd to validate with can be multiple, and prevents rotuing if false
+
+    Creating a dummy route with child routes:
+        all paths that need the same gaurd can be declared under the same parent saving some boiler plate example:
+        {path: '',
+            runGuardsAndResolvers: 'always',
+            canActivate: [authGuard],
+            children: [
+            {path: 'members', component: MemberListComponent, canActivate: [authGuard]},
+            {path: 'members/:id', component: MemberDetailComponent},
+            {path: 'lists', component: ListsComponent},
+            {path: 'messages', component: MessagesComponent},
+            ]
+        },
+
+    Hide the links to not temp the user:
+        <ng-container *ngIf="accountService.currentUser$ | async">
+            is an invisibale element that allow nested elements within it to be display or hiddened base on the ngIf Directive
+            wont show in the dom at all 
+
+    Adding a new theme:
+        Bootswatch is a good free styling resource
+
+        npm install bootswatch --save
+         angular.json add style
+         "bootswatch/dist/cyborg/bootstrap.min.css"
+        add style.css 
+        @import 'bootswatch/dist/cyborg/bootstrap.min.css';
+
+    Make the interpolated value upper case
+        Welcome {{user.username | titlecase}}
+    Clean up the welcome bar when user is logged in:
+        the as user modifier allows you to cast the accountservice and access its members 
+        changed from:
+            <div class="dropdown" *ngIf="accountService.currentUser$ | async" class="dropdown" dropdown>
+            <a class="dropdown-toggle text-light text-decoration-none" dropdownToggle>Welcome {{(accountService.currentUser$ | async)?.username}} </a>
+            
+        to:
+            <div class="dropdown" *ngIf="accountService.currentUser$ | async as user"  class="dropdown" dropdown>
+            <a class="dropdown-toggle text-decoration-none" dropdownToggle>Welcome {{user.username | titlecase}} </a>
+
+    Creating a shared module to slim down the appModule.ts:
+        use a share module for any 3rd party modules 
+
+        ng cli:
+            ng g --help
+            look for module
+
+            ng g m _modules/shared --dry-run 
+                double check the dir creation 
+                this makes a shared directory if you dont want a sep folder declare it as flat:
+
+            ng g m _modules/shared  --flat
+        
+        Slap all the 3rd party modules into it with appropraite imnports:
+            @NgModule({
+                declarations: [],
+                imports: [
+                    CommonModule,
+                    TooltipModule.forRoot(),
+                    BsDropdownModule.forRoot(),
+                    ToastrModule.forRoot({
+                    positionClass: 'toast-bottom-right'
+                    }),
+                ]
+                })
+                export class SharedModule { }
+
+        import the shared module into the app.module:
+            add     SharedModule, to the imports list
+
+        denote the sharedModule as exportable:
+        add export arrays:
+            exports:[
+                TooltipModule,
+                BsDropdownModule,
+                ToastrModule
+            ]
