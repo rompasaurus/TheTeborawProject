@@ -1136,10 +1136,142 @@ January 25 2024:
             </div>
 
             make sure to add the component to the main appcomponet.html page
-            
+
         new error to hunt down:
             Solve ReferenceError: localStorage is not defined 
             the login box doesnt come back when user logs out 
             after my jog tomorrow this is the first thing I set to 
 
-        
+January 26, 2024
+    Trying to address the localstorage error in the appcomponent page:
+        seems ang doesnt believe the local sotrage is available,
+        attempted putting the call behind a try catch block and same issue appears to occur, 
+        Attemp to print the log in the console:
+            and this seems to narrow things down as the conseole being print to is the ng anagular one and not in fact the web browser itself,
+            it seems this localstrorage call is being called server side and not client side so I need to figure out why exactly that is 
+        i believe it was dues to the fact that i set up server side rendering 
+            "ssr": false,
+            best to let the client handle the rendering
+
+        that was the issue golly I amaze myself sometimes 
+        Changed angular.json:
+        from:
+            "prerender": true,
+                "ssr": {
+                "entry": "server.ts"
+                } 
+        to:
+            "prerender": false,
+            "ssr": false
+        badabing bada boom 
+
+    Still having issues with the login prompt not howing back up upon logout...
+        needed to add 
+        this.currentUserSource.next(null);
+        to the logout method of account.service.ts
+
+    Build an app with ASPNET Core and Angular from scratch Notes:
+
+    Creating register component:
+        ng g c register
+        <form #registerForm="ngForm" (ngSubmit)="register()" autocomplete="off">
+            <h2 class="text-center text-primary">Sign Up</h2>
+            <hr>
+            <div class="mb-3">
+                <input type="text"
+                    class="form-control"
+                    name="username"
+                    [(ngModel)]="model.username"
+                    placeholder="Username">
+            </div>
+            <div class="text-center">
+                <input type="password" 
+                    class="form-control"
+                    name="password"
+                    [(ngModel)]="model.password"
+                    placeholder="Password">
+            </div>
+            <hr>
+            <div class="text-center">
+                <button class="btn btn-success me-2" type="submit">Register</button>
+                <button class="btn btn-default" type="button" (click)="cancel()">Cancel</button>
+            </div>
+        </form>
+
+    Parent to child data sharing: home (parent) to register(child)
+        sending data to the register component from the parent home comopnent:
+        cut getUsers from appcomponent to home 
+            inject the httpClient 
+            add a global users
+            this.getUsers in ngOnit to pull the users
+        goal pass user list from home compoent to register component
+
+        the input property:
+            add to registerComponent: 
+            @Input() usersFromHomeComponent: any;
+
+            pass in the usersFromHomeComponent to the app-register html element est in home.component
+            <app-register [usersFromHomeComponent]="users"></app-register>
+
+            the register component should now be able to access the data assuming the component initialized 
+
+            test the parent data registerComponent:
+                remember angular types are case sensitive
+                <div class="mb-3">
+                    <label> Who is your favorite user</label>
+                    <select name="favorit" id="fav" class="form-select">
+                        <option *ngFor="let user of usersFromHomeComponent" [value] ="user.userName"> 
+                            {{user.username}}
+                        </option>
+                    </select>
+                </div>
+
+    Child to Parent Communication:
+        in registerComponent:
+            @Output() cancelRegister = new EventEmitter();
+            
+            cancel(){
+                this.cancelRegister.emit(false);
+            }
+        in homeComponent.html:
+            <app-register [usersFromHomeComponent]="users" (cancelRegister)="cancelRegisterMode($event)"></app-register>
+        in homeComponent.ts declare cancelRegisterMode():
+            cancelRegisterMode(event:boolean){
+                this.registerMode = event;
+            }
+
+    Wire up registration with api:
+        account.service add register endpoint:
+          register(model:any){
+                return this.http.post<User>(this.baseUrl + 'account/register', model).pipe(
+                map(user => {
+                    if(user){
+                    localStorage.setItem('user', JSON.stringify(user));
+                    this.currentUserSource.next(user);
+                    }
+                })
+                )
+            }
+        wire up the service in the registerComponent:
+        inject the account service:
+              constructor(private accountService: AccountService){}
+        create register fn:
+            register() {
+                this.accountService.register(this.model).subscribe({
+                next: response => {
+                    console.log(response);
+                    this.cancel();
+                },
+                error: error => console.log(error)
+                })
+            }
+        the response is undefine due to the mapping occuring in the service 
+        the response need to be return in the mapping fucntion 
+            map(user => {
+                if(user){
+                localStorage.setItem('user', JSON.stringify(user));
+                this.currentUserSource.next(user);
+                }
+                return user;
+            })
+    

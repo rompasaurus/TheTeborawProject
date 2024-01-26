@@ -1,0 +1,32 @@
+<form #registerForm="ngForm" (ngSubmit)="register()" autocomplete="off">
+    <h2 class="text-center text-primary">Sign Up</h2>
+    <hr>
+    <div class="mb-3">
+        <input type="text"
+            class="form-control"
+            name="username"
+            [(ngModel)]="model.username"
+            placeholder="Username">
+    </div>
+    <div class="text-center">
+        <input type="password" 
+            class="form-control"
+            name="password"
+            [(ngModel)]="model.password"
+            placeholder="Password">
+    </div>
+    <hr>
+    <div class="text-center">
+        <button class="btn btn-success me-2" type="submit">Register</button>
+        <button class="btn btn-default" type="button" (click)="cancel()">Cancel</button>
+    </div>
+    <!-- hiding this for now prolly wont need it again but a good ex of parent to child comms -->
+    <!-- <div class="mb-3">
+        <label> Who is your favorite user</label>
+        <select name="favorit" id="fav" class="form-select">
+            <option *ngFor="let user of usersFromHomeComponent" [value] ="user.username"> 
+                {{user.userName}}
+            </option>
+        </select>
+    </div> -->
+</form>
