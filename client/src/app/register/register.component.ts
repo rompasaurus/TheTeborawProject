@@ -19,7 +19,7 @@ export class RegisterComponent {
         console.log("registration complete",response);
         this.cancel();
       },
-      error: error => this.toastr.error(error.error)
+      //error: error => this.toastr.error(error.error)
     })
   }
 

@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using TeborawAPI.Data;
 using TeborawAPI.Extensions;
+using TeborawAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,8 +10,8 @@ builder.Services.AddIdentityServices(builder.Configuration);
 
 
 var app = builder.Build();
-
-
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+app.UseMiddleware<ExceptionMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -31,8 +34,20 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller}/{action=Index}/{id?}");
 
-
-
+using var scope = app.Services.CreateScope();
+var services = scope.ServiceProvider;
+try
+{
+    var context = services.GetRequiredService<DataContext>();
+    //with a freshly dropped db this will rerun all the migration scripts create the db and then run seed
+    await context.Database.MigrateAsync();
+    await Seed.SeedUsers(context);
+}
+catch (Exception ex)
+{
+    var logger = services.GetService<ILogger<Program>>();
+    logger?.LogError(ex, "An error occured during migration");
+}
 
 app.Run();
 
