@@ -2029,3 +2029,222 @@ January 27, 2024
             next steps:
                 address seed error
                 Clean up the component styling make the compoent appear center aligned with a margin around the sides 
+
+January 28, 2024:
+    Fixed seed error had to make the public id nullable in the migration script:
+        PublicId = table.Column<string>(type: "text", nullable: true),
+
+    To Do:
+        Center the compoenent in the index page 
+
+    
+    Seed data postman testing:
+        int the api route check there is a test tab that allows you to assert the response and store a return value:
+            running the first route test in the auth tetsing folder will pull the auth token and allow it to be used in subsequent test without need to manulaly paste it in 
+        top right icon with show the env variable that is stored with name token after test is run 
+
+    Repository Pattern:
+        martin fowler patterns of enterprise architecture:
+            A repository mediates between the domain and data mapping layers acting like an in memory domain object collection
+
+            Current app data workflow:
+                web server <-> controller <-> dbContext <-> database 
+
+            Repository Pattern workflow:
+                web server <-> controller <-> repository <-> dbContext <-> database 
+
+            Repo allow for quick data access for commonly used 
+            may be exceesss as unitofwork and dbcontext act in similar fashion 
+
+        Reason to use this thoughL:
+            encapsulates the logic
+                users.First turns into getUser can limit the scope of method accessed by the front end 
+            reduce dupe query logic 
+            promotes testability 
+            easy to test against repo the context 
+            decouples application from the persistance framework 
+            decentralizes the queries 
+            allows easy changes orm 
+            promotes readablility 
+            Drawbacks:
+                each root entity should have its own repo 
+                need to implement unit of work pattern 
+        
+    Pull the context our of the controller 
+        create repoository interface for user in repo folder then implement it in the data folder 
+        namespace TeborawAPI.Data;
+            public class UserRepository : IUserRepository
+            {
+                private readonly DataContext _context;
+
+                public UserRepository(DataContext context)
+                {
+                    _context = context;
+                }
+                public void Update(AppUser user)
+                {
+                    _context.Entry(user).State = EntityState.Modified;
+                }
+
+                public async Task<bool> SaveALlAsync()
+                {
+                    return await _context.SaveChangesAsync() > 0;
+                }
+
+                public async Task<IEnumerable<AppUser>> GetUsersAsync()
+                {
+                    await _context.Users.ToListAsync();
+                }
+
+                public async Task<AppUser> GetUserByIdAsync(int id)
+                {
+                    return await _context.Users.FindAsync(id);
+                }
+
+                public async Task<AppUser> GetUserByUsernameAsync(string username)
+                {
+                    return await _context.Users.SingleOrDefaultAsync(x => x.UserName == username);
+                }
+            } 
+        add the repo as a service extenision in the application services extension:
+            services.AddScoped<IUserRepository, UserRepository>();
+
+    Refactor the User Controller
+        inject user repo interface instead of the context:
+            public UsersController(IUserRepository userRepository)
+            call the repo and return need to return as 
+            return Ok(await _userRepository.GetUsersAsync());
+        Photos array is empty though when returning 
+            the list of users doest not include related data 
+            need the includes keyword to eager load the data
+            code:
+                return await _context.Users
+                    .Include(p => p.Photos)
+                    .ToListAsync();
+
+            This fucked shit up apparantly
+            Error:
+                 "message": "A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of 32. Consider using ReferenceHandler.Preserve on JsonSerializerOptions to support cycles. Path: $.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.AppUser.Photos.",
+                "details": "   at System.Text.Json.ThrowHelper.ThrowJsonException_SerializerCycleDetected(Int32 maxDepth)\n   at System.Text.Json.Serialization.JsonConverter`1.TryWrite(Utf8JsonWriter writer, T& value, JsonSerializerOptions options, WriteStack& state)\n   at System.Text.Json.Serialization.Converters.ListOfTConverter`2.OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, WriteStack& state)\n   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryWrite(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options,
+
+            the includes is caught in a cyclical query because the AppUsers is associated to both the photos and User
+            need to exclude the appuser upont quesry
+
+            Need to shape the data via DTO's:
+            Create the member and photo excluding the cyclical maps
+                public class MemberDTO
+                {
+                    public int Id { get; set; }
+                    public string UserName {get; set;}
+                    public int Age { get; set; }
+                    public string KnownAs { get; set; }
+                    public DateTime Created { get; set; }
+                    public DateTime LastActive { get; set; }
+                    public string Gender { get; set; }
+                    public string Introduction { get; set; }
+                    public string Country { get; set; }
+                    public string City { get; set; }
+                    public string Interests { get; set; }
+                    public string LookingFor { get; set; }
+                    public List<PhotoDTO> Photos { get; set; }
+                }
+
+                public class PhotoDTO
+                {
+                    public int Id { get; set; }
+                    public string Url{ get; set; }
+                    public bool IsMain { get; set; }
+                }
+
+            Automapper!! Map the model/entity to the dto:
+                nuget install the automapper: AutoMapper.Extensions.Microsoft.DependencyInjection
+                
+                Create helpers folder > AutoMapperProfiles: 
+                    public class AutoMapperProfiles: Profile
+                    {
+                        public AutoMapperProfiles()
+                        {
+                            CreateMap<AppUser, MemberDTO>();
+                            CreateMap<Photo, PhotoDTO>();
+                        }
+                    }
+                
+                AutoMappers shouold ideally compare the names and "auto" map the propertys and its smart enough to know Age in the dto refers to the getAge of user 
+            
+                Inject add as a service auto mapper to the controller 
+                    ApplicationServiceExtensions:
+                        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+                    usersController inject:
+                        private readonly IUserRepository _userRepository;
+                        private readonly IMapper _mapper;
+
+                        public UsersController(IUserRepository userRepository, IMapper mapper)
+                        {
+                            _userRepository = userRepository;
+                            _mapper = mapper;
+                        }
+                    
+                Utilize the mapper in the UserController:
+                    public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers()
+                    {
+                        var users = await _userRepository.GetUsersAsync();
+                        var usersToReturn = _mapper.Map <IEnumerable<MemberDTO>>(users);
+                        return Ok(usersToReturn);
+                    }
+
+            Configure specified propers to be returned from a dto eg just the photo url not entire object:
+                mapping to meber prop: public string PhotoUrl { get; set; }
+                automapper auto sets this to null need to dictate how to fill this in the Automapper profiles
+                Code:
+                    CreateMap<AppUser, MemberDTO>()
+                        .ForMember(dest => dest.PhotoUrl,
+                            opt => opt
+                                .MapFrom(src => src.Photos.FirstOrDefault(x => x.IsMain).Url));
+
+                photo url should now populate properly without null gonna take a min to unpack this code
+
+        Optimizing the entity queries:
+            Right now the ef calls are pulling all the data from the user table event the password fields that down get mapped to anything 
+
+            the non automapper way:
+                public async Task<MemberDTO> GetMemberAsync(string username)
+                {
+                    return await _context.Users
+                        .Where(x => x.UserName == username)
+                        .Select(user => new MemberDTO
+                        {
+                            Id = user.Id,
+                            UserName = user.UserName,
+                            KnownAs = user.KnownAs,
+                        }).SingleOrDefaultAsync();
+                }
+
+        the automapper way:
+            IUserRepository inject Imapper and add at the projectTO inplace of the select statement:
+                public async Task<MemberDTO> GetMemberAsync(string username)
+                {
+                    return await _context.Users
+                        .Where(x => x.UserName == username)
+                        .ProjectTo<MemberDTO>(_mapper.ConfigurationProvider)
+                        .SingleOrDefaultAsync();
+                }
+            Swap the userController code to use the repo instead:
+                    [HttpGet("{username}")] // /api/users/2
+                    //gonna get  weird result if username not foune
+                    public async Task<ActionResult<MemberDTO>> GetUser(string username)
+                    {
+                        return await _userRepository.GetMemberAsync(username);
+                    }
+
+            GetAge is fucking shit up automapper needs to load all members of the data entity before it can call that 
+                comment that shit out in appuser:
+                adjust the automapper profile to pull the ages as it mappes instead of from within the appuser class :
+                      CreateMap<AppUser, MemberDTO>()
+                        .ForMember(dest => dest.PhotoUrl,
+                            opt => opt
+                                .MapFrom(src => src.Photos.FirstOrDefault(x => x.IsMain).Url))
+                        .ForMember(dest => dest.Age, opt => opt.MapFrom(src => src.DateOfBirth.CalculateAge()));
+                    
+            Note:
+                The projectTo autoMapp call auto eager loads the pertinant data, in this case the photo url, you nolong need the includes keyword as that is handled already.
