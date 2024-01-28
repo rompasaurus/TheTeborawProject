@@ -1,31 +1,37 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Data;
+using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
+using TeborawAPI.Interfaces;
 
 namespace TeborawAPI.Controllers;
+[Authorize]
 public class UsersController : BaseAPIController
 {
-    private readonly DataContext _context;
-    public UsersController(DataContext context)
+    private readonly IUserRepository _userRepository;
+    private readonly IMapper _mapper;
+
+    public UsersController(IUserRepository userRepository, IMapper mapper)
     {
-        _context = context;
+        _userRepository = userRepository;
+        _mapper = mapper;
     }
     
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers()
+    public async Task<ActionResult<IEnumerable<MemberDTO>>> GetUsers()
     {
-        var users = await _context.Users.ToListAsync();
+        var users = await _userRepository.GetMembersAsync();
+        return Ok(users);
         
-        return users;
     }
-
-    [Authorize]
-    [HttpGet("{id}")] // /api/users/2
-    public async Task<ActionResult<AppUser>> GetUser(int id)
+    
+    [HttpGet("{username}")] // /api/users/2
+    //gonna get  weird result if username not foune
+    public async Task<ActionResult<MemberDTO>> GetUser(string username)
     {
-        var user = await _context.Users.FindAsync(id);
-        return user;
+        return await _userRepository.GetMemberAsync(username);
     }
 }

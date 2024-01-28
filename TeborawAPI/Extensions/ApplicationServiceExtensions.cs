@@ -20,6 +20,9 @@ public static class ApplicationServiceExtensions
         });
         services.AddControllers();
         services.AddCors();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+        
         return services;
     }
 }
