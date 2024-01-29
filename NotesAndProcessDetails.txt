@@ -2637,4 +2637,33 @@ January 29 2024:
             border-top: none;
             }
 
-    
+
+    Create tabs for details:
+        add  TabsModule.forRoot(), to the shared modules 
+        
+        add tabset element to the member-detail template  
+        <div class="col-8">
+            <tabset></tabset>
+        </div>
+
+        specifie its properties as its an ngx component:
+          <div class="col-8">
+            <tabset class="member-tabs">
+            <tab heading="About {{member.knownAs}}">
+                <h4>Description</h4>
+                <p>{{member.introduction}}</p>
+                <h4>Looking for</h4>
+                <p>{{member.lookingFor}}</p>
+            </tab>
+            <tab heading="Interests">
+                <h4>Interests</h4>
+                <p>{{member.interests}}</p>
+            </tab>
+            <tab heading="Photos">
+                <p>Photos will go hear</p>
+            </tab>
+            <tab heading="Messages">
+                <p>Messages will go hear</p>
+            </tab>
+            </tabset>
+        </div>
