@@ -30,7 +30,7 @@ export class ErrorInterceptor implements HttpInterceptor{
                 }
                 //this will take wat was two array objects and flatten them into one
                 //throw modelStateErrors.flat();
-                throw modelStateErrors.flat();
+                throw modelStateErrors;
               } else {
                 this.toastr.error(error.error, error.status.toString())
               }

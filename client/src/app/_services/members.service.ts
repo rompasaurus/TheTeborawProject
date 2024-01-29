@@ -12,23 +12,27 @@ export class MembersService {
   constructor(private http: HttpClient) { }
 
   getMembers(){
-    return this.http.get<Member[]>(this.baseUrl + 'users', this.getHttpOptions())
+    return this.http.get<Member[]>(this.baseUrl + 'users')
+    //not needed any more now that jwt interceptor is in place
+    //return this.http.get<Member[]>(this.baseUrl + 'users', this.getHttpOptions())
   }
 
   getMember(username:string){
-    return this.http.get<Member>(this.baseUrl + 'users/' + username, this.getHttpOptions());
+    return this.http.get<Member>(this.baseUrl + 'users/' + username);
+    //not needed any more now that jwt interceptor is in place
+    //return this.http.get<Member>(this.baseUrl + 'users/' + username, this.getHttpOptions());
   }
 
   //need a way to pass authentication, the wrong way first then the proper way later 
-  getHttpOptions(){
-    const userString = localStorage.getItem('user')
-    if(!userString) return;
-    const user = JSON.parse(userString)
-    return{
-      headers: new HttpHeaders({
-        Authorization: 'Bearer ' + user.token
-      })
-    }
-  }
+  // getHttpOptions(){
+  //   const userString = localStorage.getItem('user')
+  //   if(!userString) return;
+  //   const user = JSON.parse(userString)
+  //   return{
+  //     headers: new HttpHeaders({
+  //       Authorization: 'Bearer ' + user.token
+  //     })
+  //   }
+  // }
 
 }

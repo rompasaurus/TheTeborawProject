@@ -2491,5 +2491,75 @@ January 28, 2024:
                 })
 
 January 29 2024:
-    Adding animated buttons:
+    Adding animated buttons member card and member card css:
+        .member-icons {
+            position: absolute;
+            bottom: -30%;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0;
+        }
+
+        .card-img-wrapper:hover .member-icons{
+            bottom: 0;
+            opacity: 1;
+        }
+
+        .animate {
+            transition: all .3s ease-in-out;
+        }
+        <ul class="list-inline member-icons animate text-center">
+                <li class="list-inline-item">
+                    <button class="btn btn-primary">
+                        <i class="fa fa-user"></i>
+                    </button>
+                </li>
+                <li class="list-inline-item">
+                    <button class="btn btn-primary">
+                        <i class="fa fa-heart"></i>
+                    </button>
+                </li>
+                <li class="list-inline-item">
+                    <button class="btn btn-primary">
+                        <i class="fa fa-envelope"></i>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+    Using interceptor to send jwt token instead of hardwiring header with barer on each request"
+
+        create interceptor ng cli:
+            ng g interceptor _interceptors/jwt
+
+        jwt.intercepot.ts:
+            export class jwtInterceptor implements HttpInterceptor{
+
+            constructor(private accountService: AccountService){}
+
+            intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+                //THis is a trick to ensure that the subscription completes and unsubscribing is not required 
+                this.accountService.currentUser$.pipe(take(1)).subscribe({
+                next: user=>{
+                    if(user){
+                    req = req.clone({
+                        setHeaders: {
+                        //back ticks allow for string interpols to be added inline without need of + '' nonsense
+                        Authorization: `Bearer ${user.token}`
+                        }
+                    })
+                    }
+                }
+                })
+                return next.handle(req)
+                }
+            }
+        add the intercepto to the app.module:
+            {provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi:true},
         
+        remove the headers added in the members service
+
+
+    
