@@ -2961,3 +2961,75 @@ Updating Resources:
             
             npm install :
                 npm install ngx-spinner --save
+
+        Add the css for animations:
+            angular.json:
+                "node_modules/ngx-spinner/animations/square-spin.css"
+            style.css
+                @import "node_modules/ngx-spinner/animations/square-spin.css";
+        
+        import into the share modules:
+            NgxSpinnerModule.forRoot({
+                type: 'square-spin'
+            }),
+        Export the module as well:
+            NgxSpinnerModule,
+
+        now to add a effectively an interceptor to show the loading bar upon http request:
+            create busy service ng cli to display the spinner :
+                ng g s _services/busy
+                BusyService:
+                    @Injectable({
+                        providedIn: 'root'
+                    })
+                    export class BusyService {
+                        busyRequestCount = 0;
+                        constructor(private spinnerService : NgxSpinnerService) { }
+
+                        busy(){
+                            this.busyRequestCount++
+                            this.spinnerService.show(undefined, {
+                            type: 'square-spin',
+                            bdColor: 'grey',
+                            color: 'blue'
+                            })
+                        }
+
+                        idle(){
+                            this.busyRequestCount--
+                            if(this.busyRequestCount <= 0){
+                            this.busyRequestCount = 0
+                            this.spinnerService.hide();
+                            }
+                        }
+                    }
+
+        apply this service to an interceptor 
+            ng cli:
+                ng g interceptor _interceptors/loading
+
+            loadingInterceptor:
+
+                @Injectable()
+                    export class loadingInterceptor implements HttpInterceptor{
+
+                    constructor(private busyService: BusyService){}
+
+                    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+                        this.busyService.busy();
+                        return next.handle(req).pipe(
+                        //this is a synthetic delay for development to allow for loading bar to show itself
+                        delay(1000),
+                        finalize(()=> {
+                            this.busyService.idle()
+                        })
+                        )
+                    }
+                }
+
+        Slap that Interceptor into the app.modules providor:
+            {provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi:true},
+
+        need to add the spinner to the appcomponent // the root component of the entire app allowing the spinner potential to show on any page or route:
+            app.component.html:
+                <ngx-spinner type = "square-spin" [fullScreen] = "true"><p style="color: white" > Loading... </p></ngx-spinner>

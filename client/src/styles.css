@@ -4,7 +4,8 @@
 @import "../node_modules/ngx-bootstrap/datepicker/bs-datepicker.css";
 @import "../node_modules/ngx-toastr/toastr.css";
 @import 'bootswatch/dist/cyborg/bootstrap.min.css';
-
+@import "../node_modules/ngx-spinner/animations/ball-scale-multiple.css";
+@import "../node_modules/ngx-spinner/animations/square-spin.css";
 
 
 .tab-panel {
