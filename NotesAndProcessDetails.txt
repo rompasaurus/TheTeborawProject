@@ -2248,3 +2248,248 @@ January 28, 2024:
                     
             Note:
                 The projectTo autoMapp call auto eager loads the pertinant data, in this case the photo url, you nolong need the includes keyword as that is handled already.
+    
+    Building the User Interface:
+        Using Typescript:
+            Declaring a type of 2 types:
+                let date : number | string = 42;
+                data can have either a number or stringassigned to it.
+
+            Typescript will infer the type base on the value that it is initialized too and the first value assigned dictates the type going forward
+
+            Declaring an interface:
+                will dicate the types ahead of time without values ex:
+                    interface Car {
+                        color: string,
+                        model: string,
+                        topSpeed?: number
+                    }
+
+                an interface will assume that all properties listed are required unless you add a ? after field declarations
+                like topSpeed
+
+            infering types from function params:
+                const multiply = (x,y) => {
+                    return x * y;
+                }
+                typescript inferes x and y can be any type but based on the function using multiplication it can only be numbers so its best to decalre it as a number 
+
+        Create the Member and photo Interface:
+            the front end needs a model to pass values to the api a viewmodel so to speak 
+            ng cli:
+                ng c i 
+
+            The quick way to make a angular ts interface from a json file:
+                json2ts.com > the snappy easy lazy way to do it you can get the user data passed back from the user controller and slapp it in here,
+                to get a quick interface created 
+
+                copy example user json data into the site ex: 
+                    { 
+                        "User":[{
+                            "id": 1,
+                            "userName": "lisa",
+                            "age": 67,
+                            "knownAs": "Lisa",
+                            "created": "2020-06-24T02:00:00+02:00",
+                            "lastActive": "2020-06-21T02:00:00+02:00",
+                            "gender": "female",
+                            "introduction": "Sunt esse aliqua ullamco in incididunt consequat commodo. Nisi ad esse elit ipsum commodo fugiat est ad. Incididunt nostrud incididunt nostrud sit excepteur occaecat.\r\n",
+                            "country": "Martinique",
+                            "city": "Greenbush",
+                            "interests": "Sit sit incididunt proident velit.",
+                            "lookingFor": "Dolor anim cupidatat occaecat aliquip et Lorem ut elit fugiat. Mollit eu pariatur est sunt. Minim fugiat sit do dolore eu elit ex do id sunt. Qui fugiat nostrud occaecat nisi est dolor qui fugiat laborum cillum. Occaecat consequat ex mollit commodo ad irure cillum nulla velit ex pariatur veniam cupidatat. Officia veniam officia non deserunt mollit.\r\n",
+                            "photos": [
+                                {
+                                    "id": 1,
+                                    "url": "https://randomuser.me/api/portraits/women/54.jpg",
+                                    "isMain": true
+                                }
+                            ],
+                            "photoUrl": "https://randomuser.me/api/portraits/women/54.jpg"
+                        }]
+                    }
+                produces this ts interface:
+                    export interface User {
+                        id: number;
+                        userName: string;
+                        age: number;
+                        knownAs: string;
+                        created: string;
+                        lastActive: string;
+                        gender: string;
+                        introduction: string;
+                        country: string;
+                        city: string;
+                        interests: string;
+                        lookingFor: string;
+                        photos: Photo[];
+                        photoUrl: string;
+                        }
+
+                    export interface Photo {
+                        id: number;
+                        url: string;
+                        isMain: boolean;
+                        }
+            Create a member.ts interface file in _models folder:
+                ng g interface _models/member
+                cmd . on the photo interface to make the interface a new file 
+
+    Get Ride of harcoded baseUrl:
+        add a env file to house this data 
+        
+        ng cli:
+            ng g environments
+                creates 2 files 
+                    CREATE src/environments/environment.ts (31 bytes)
+                    CREATE src/environments/environment.development.ts (31 bytes)
+            establis url and env in the dev and prod files:
+                dev:
+                    export const environment = {
+                        prodution: false,
+                        apiUrl: 'https://localhot:L5001/api/'
+                    };
+                prod:
+                    export const environment = {
+                        prodution: true,
+                        apiUrl: 'api/'
+                    };
+
+        import the environment vars everwhere the baseUrl is swap em:
+            DI environment and swap Ex:
+                //ensure to inmport from root import { environment } from '../../environments/environment'; 
+                //and not the dev one otherwise it will not change in production
+                baseUrl = environment.apiUrl;
+    
+    Marshalling Data:
+        In computer science, marshalling (similar to serialization) is the process of transforming the memory representation of an object to a data format suitable for storage or transmission. It is typically used when data must be moved between different parts of a computer program or from one program to another.
+    
+    
+    Create a member service to to marshal data from the controller to components:
+        ng cli: 
+            ng g s _services/members 
+
+        member.service.ts:
+            @Injectable({
+            providedIn: 'root'
+            })
+            export class MembersService {
+            baseUrl = environment.apiUrl
+
+            constructor(private http: HttpClient) { }
+
+            getMembers(){
+                return this.http.get<Member[]>(this.baseUrl + 'users' + this.getHttpOptions())
+            }
+
+            getMember(username:string){
+                return this.http.get<Member>(this.baseUrl + 'users/' + username, this.getHttpOptions());
+            }
+
+            //need a way to pass authentication, the wrong way first then the proper way later 
+            getHttpOptions(){
+                const userString = localStorage.getItem('user')
+                if(!userString) return;
+                const user = JSON.parse(userString)
+                return{
+                headers: new HttpHeaders({
+                    Authorization: 'Bearer ' + user.token
+                })
+                }
+        
+        put the service to use in the member list component:
+            export class MemberListComponent implements OnInit {
+                members : Member[] = []
+
+                constructor(private memberService:MembersService){}
+
+                ngOnInit(): void {
+                    this.loadMembers()
+                }
+
+                loadMembers(){
+                    this.memberService.getMembers().subscribe({
+                    next: members => this.members = members
+                    })
+                }
+            }
+
+    List the names in the member-list.component:
+        <div class="row">
+            <div class="col-2">
+                <p *ngFor="let member of members">{{member.knownAs}}</p>
+            </div>
+        </div>
+
+    Create memeber card components:
+        ng cli:
+            ng g c member/member-card
+
+            tsconfig.ts can be adjust to reduce ts's strictness
+                "strictPropertInitialization" : false
+            not a good idea to do this 
+        member card is achild to the member list and thus need input data 
+        @Input() member : Member
+            angular will yell at you until this initialized you can do this in 2 ways:
+            @Input() member : Member = {} as Member
+            or:
+            @Input() member : Member | undefined;
+                prefferred way is this as initialy the member will start out undefined 
+
+        Create template card:
+        <div class="card mb-4">
+            <div class="card-img-wrapper">
+                <img src="{{member?.photoUrl}}" alt="{{member?.knownAs}}">
+            </div>
+        </div>
+        Or check for member existance:
+        <div class="card mb-4" *ngIf="member">
+            <div class="card-img-wrapper">
+                <img src="{{member.photoUrl}}" alt="{{member.knownAs}}">
+            </div>
+        </div>
+
+        slap that component into the list component template passing in the member as the input 
+        <div class="row">
+            <div class="col-2" *ngFor="let member of members">
+                <app-member-card [member]="member"></app-member-card>
+            </div>
+        </div>
+
+    Make the cards interactive with hovering:
+        member-card.component.css
+            .card:hover img {
+                transform: scale(1.2,1.2);
+                transition-duration: 500ms;
+                transition-timing-function: ease-out;
+                opacity: 0.7;
+            }
+
+            .card img {
+                transform: scale(1.0,1.0);
+                transition-duration: 500ms;
+                transition-timing-function: ease-out;
+            }
+
+            .card-img-wrapper {
+                overflow: hidden;
+            }
+        this zooms the image in the box when you hover over it.
+
+        encapsulation attribute of a component.ts 
+            encapsulation: ViewEncapsulation.Emulated
+                when set to emulate which by default it is 
+                will generate unique class ids with the class name and random number at the end for each compoent ensuring that the css declare in the component.cc only applies to that specific component generate from that ts component you can however set the ViewEncapsulation to none and the css will be set to the class declared within the template without random ids tacked to the end:
+
+            example:
+                encapsulation: ViewEncapsulation.None
+                @Component({
+                    selector: 'app-member-card',
+                    templateUrl: './member-card.component.html',
+                    styleUrl: './member-card.component.css',
+                    encapsulation: ViewEncapsulation.None
+                })
+
+January 29 2024:
+    Adding animated buttons:
+        
