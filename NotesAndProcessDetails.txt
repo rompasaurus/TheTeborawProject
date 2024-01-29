@@ -2667,3 +2667,52 @@ January 29 2024:
             </tab>
             </tabset>
         </div>
+
+    Adding Photo Gallery to the tab:
+        ngx-gallery will be used here:
+            npm install ng-gallery @angular/cdk --save
+
+        This is a standalone component which allows component to be created appart from an ng module 
+        meaning the component does not need to be declared in the app module
+        but you cant use a standalone in a component that is not a standalone
+
+        MemberDetailComponent needs declared as standalone to use gallery:
+            @Component({
+                selector: 'app-member-detail',
+                standalone: true,
+
+            MemberDetailComponent needs undeclared from the app module
+                this will break the ang declarations in the MemberDetailComponent.html template
+                cant use ngif and temp set 
+                these elements need to import these on there in 
+                need to add an imports stamement 
+                this should fix that:
+                    import {NgIf} from "@angular/common";
+                    import {TabsModule} from "ngx-bootstrap/tabs";      
+
+                      imports: [
+                        NgIf,
+                        TabsModule
+                    ],
+            
+            then import the ng gallery now too this > GalleryModule
+
+        pull the photos into a galleryitem array via:
+            images: GalleryItem[] = []
+            getImages(){
+                if(!this.member) return;
+                for(const photo of this.member.photos){
+                this.images.push(new ImageItem({src: photo.url, thumb:photo.url}))
+                }
+            }
+
+        added the gallerey component to the members details component
+            <tab heading="Photos">
+                <gallery [items]="images"></gallery>
+            </tab>
+
+        however because the gallery is being put in a tab the tab needs a #photTab reference added
+        with a if to check if the the phot tab is active
+            <tab heading="Photos" #photoTab = "tab">
+                <gallery *ngIf="photoTab.active" [items]="images"></gallery>
+            </tab>
