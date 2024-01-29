@@ -19,6 +19,8 @@ import { NotFoundComponent } from './errors/not-found/not-found.component';
 import { ServerErrorComponent } from './errors/server-error/server-error.component';
 import { MemberCardComponent } from './member/member-card/member-card.component';
 import { JwtInterceptor } from './_interceptors/jwt.interceptor';
+import { MemberEditComponent } from './member/member-edit/member-edit.component';
+import {GalleryComponent} from "ng-gallery";
 
 @NgModule({
   declarations: [
@@ -32,7 +34,8 @@ import { JwtInterceptor } from './_interceptors/jwt.interceptor';
     TestErrorComponent,
     NotFoundComponent,
     ServerErrorComponent,
-    MemberCardComponent
+    MemberCardComponent,
+    MemberEditComponent
   ],
   imports: [
     BrowserModule,
@@ -41,6 +44,7 @@ import { JwtInterceptor } from './_interceptors/jwt.interceptor';
     FormsModule,
     BrowserAnimationsModule,
     SharedModule,
+    GalleryComponent,
   ],
   providers: [
     provideClientHydration(),

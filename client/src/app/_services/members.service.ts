@@ -23,7 +23,11 @@ export class MembersService {
     //return this.http.get<Member>(this.baseUrl + 'users/' + username, this.getHttpOptions());
   }
 
-  //need a way to pass authentication, the wrong way first then the proper way later 
+  updateMember(member:Member){
+    return this.http.put(this.baseUrl + 'users', member)
+  }
+
+  //need a way to pass authentication, the wrong way first then the proper way later
   // getHttpOptions(){
   //   const userString = localStorage.getItem('user')
   //   if(!userString) return;

@@ -2716,3 +2716,248 @@ January 29 2024:
             <tab heading="Photos" #photoTab = "tab">
                 <gallery *ngIf="photoTab.active" [items]="images"></gallery>
             </tab>
+
+Updating Resources:
+    Goals:
+        Angular template forms , 
+        can deactivate routegaurd, 
+        @ViewChild, 
+        persisting changes to the api, 
+        adding loading indicators, 
+        cavhhing data in angular services
+
+    
+    Create profile edit page:
+        ng cli:
+            ng g c member/member-edit
+
+        Add router link to the nav bar to get to member and add routing as well 
+            {path: 'member/edit', component: MemberEditComponent},
+            <a class="dropdown-item" routerLink="/member/edit"> Edit Profile</a>
+
+        Member-edit:
+            pull the members user data and quckly slap a user name in the template 
+                member: Member | undefined
+                user: User | null = null
+
+                constructor(private accountService : AccountService, private memberService : MembersService) {
+                    this.accountService.currentUser$.pipe(take(1)).subscribe({
+                    next: user => this.user = user
+                    })
+                }
+
+                ngOnInit(): void {
+                    this.loadMember()
+                }
+
+                loadMember(){
+                    if(!this.user) return
+                    this.memberService.getMember(this.user.username).subscribe({
+                    next: member => this.member = member
+                    })
+                }
+
+    Create edit template:
+        copy fair bit from the member detail page:
+            turn field into forms and add edit alert will make dynamic later 
+            <div class="row" *ngIf="member">
+                <div class="col-4">
+                    <h1>Your Profile</h1>
+                </div>
+                <div class="col-8">
+                    <div class="alert alert-info">
+                    <p><strong>You have made changes, any unsaved changes will be lost. </strong></p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                    <div class="card-body">
+                        <img src="{{member.photoUrl || './assets/user.png'}}" alt="{{member.knownAs}}"
+                            class="card-img-top img-thumbnail">
+                        <div>
+                        <strong>Location:</strong>
+                        <p>{{member.city}}</p>
+                        </div>
+                        <div>
+                        <strong>Age:</strong>
+                        <p>{{member.age}}</p>
+                        </div>
+                        <div>
+                        <strong>Last Active:</strong>
+                        <p>{{member.lastActive}}</p>
+                        </div>
+                        <div>
+                        <strong>Member Since:</strong>
+                        <p>{{member.created}}</p>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-success col-12">Save CHanges</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <div class="col-8">
+                    <tabset class="member-tabset">
+                    <tab heading="About {{member.knownAs}}">
+                        <form>
+                        <h4 class="mt-2">Description</h4>
+                        <textarea class="form-control" [(ngModel)]="member.introduction"
+                                    name="introduction"
+                                    rows="6">
+
+                        </textarea>
+                        <h4 class="mt-2">Looking for</h4>
+                        <textarea class="form-control" [(ngModel)]="member.lookingFor"
+                                    name="lookingFor"
+                                    rows="6">
+
+                        </textarea>
+                        <h4 class="mt-2">Interests</h4>
+                        <textarea class="form-control" [(ngModel)]="member.interests"
+                                    name="interests"
+                                    rows="6">
+
+                        </textarea>
+                        <h4 class="mt-2">Location Details: </h4>
+                        <div class="d-flex flex-row align-items-center">
+                            <label for="city">City:</label>
+                            <input type="text"[(ngModel)]="member.city" name="city" class="form-control mx-2">
+                            <label for="country">Country: </label>
+                            <input type="text" [(ngModel)]="member.country" name="country" class="form-control mx-2">
+                        </div>
+                        </form>
+                    </tab>
+                    <tab heading="Edit Photos">
+                        <p>Photo edit will go here</p>
+                        <p>{{member.interests}}</p>
+                    </tab>
+                    </tabset>
+                </div>
+            </div>
+
+    Plugin the form and submit:
+        MemberEditComponent:
+            to tie a a button to a form that is outside of the form element you need to assign the form and id and assign a form to the button like so:
+            <button class="btn btn-success col-12" form="editForm">Save Changes</button>
+
+            creating form element:
+            <form #editForm="ngForm" id="editForm" (ngSubmit)="updateMember()" >
+
+            updateMember(){
+                console.log("Updating Member: ",this.member)
+                this.toastr.success("Profile Updated Successfully")
+            }
+
+
+        Dynamic alert for if form has been editted:
+            <div class="alert alert-info" *ngIf="editForm.dirty">
+                <p><strong>You have made changes, any unsaved changes will be lost. </strong></p>
+            </div>
+        ngif dirty will make element appear of the the form editForm cantains altered values yet to be save also you can hide the save button as well 
+            <button class="btn btn-success col-12"
+                form="editForm"
+                [disabled]="!editForm.dirty">Save Changes</button>   
+        
+        Add a reset button:
+            need to be able to access the form element established on the template page 
+            using ViewChild()
+            in the memberedit component ts
+
+            @ViewChild('editForm') editForm: NgForm | undefined
+
+            then the forms values can be accessed or reset in this case:
+              updateMember(){
+                    console.log("Updating Member: ",this.member)
+                    this.toastr.success("Profile Updated Successfully")
+                    this.editForm?.reset(this.member)
+                }
+
+            !!the name property of each form fied is criticval for angular to map the field to the models property 2 way thus if mispelled or case is wrong shit gets f'ed in the a when you go to submit the form dont fuck it up 
+
+    Prevent Navigation away from page if unsaved changes exist:
+        CanDeactivate Gaurd is just the ticket:
+        
+        ng cli:
+            ng g g _gaurds/prevent-unsaved-changes
+                select canDeactivate unselect activate
+
+        preventUnsavedChangesGuard.ts
+            export const preventUnsavedChangesGuard: CanDeactivateFn<MemberEditComponent> = (component) => {
+                if(component.editForm?.dirty){
+                    return confirm('Are you sure you want to continue? all unsaved changes will be lost')
+                }
+                return true;
+            };
+
+        apply this gaurd to the route in question:
+            {path: 'member/edit', component: MemberEditComponent, canDeactivate: [preventUnsavedChangesGuard]},
+
+
+        this will not prevent navigate to entirely different domains need access to the browser for this.
+        @Hostlistener is the ticket for this
+
+        this bad boy gone be huge for user sanity
+          @HostListener('window:beforeunload', ['$event']) unloadNotification($event: any){
+            if(this.editForm?.dirty){
+            $event.returnValue = true
+        }
+
+    Persisting the Changes to the api:
+        create memberUpdateDtop:
+            namespace TeborawAPI.DTOs;
+            public class MemberUpdateDTO
+            {
+                public string Introduction { get; set; }
+                public string LookingFor { get; set; }
+                public string City { get; set; }
+                public string Country { get; set; }
+                public string Interests { get; set; }
+            }
+        add mapping profile:
+            CreateMap<MemberUpdateDTO, AppUser>();
+
+        updateuser via UsersController:
+            [HttpPut]
+            public async Task<ActionResult> UpdateUser(MemberUpdateDTO memberUpdateDto)
+            {
+                //THe username will be accessble via the claims principle of the user obtain via the token passed 
+                //in via the headed of this request
+                //debug will show this > user >results view > 
+                //[0] > ex: {http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier: lisa}
+                //nameidentifier: lisa or the value of 0 array memebr will be the user name as establishe in the Token service
+                // Via new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
+                var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var user = await _userRepository.GetUserByUsernameAsync(username);
+                
+                if(user == null) return NotFound();
+
+                _mapper.Map(memberUpdateDto, user);
+
+                if (await _userRepository.SaveALlAsync()) return NoContent();
+
+                return BadRequest("Failed to Update User");
+            }
+
+    Wire in the api endpoint to the frontend:  
+        update memberService:   
+              updateMember(member:Member){
+                return this.http.put(this.baseUrl + 'users', member)
+            }
+        Utilize this in the MemberEditComponent:
+            updateMember(){
+                console.log("Updating Member: ",this.member)
+                this.memberService.updateMember(this.editForm?.value).subscribe({
+                next: _ =>{
+                    this.toastr.success("Profile Updated Successfully")
+                    this.editForm?.reset(this.member)
+                }
+                })
+            }
+
+    Adding a loading indicator upon updates:
+        install a spinner -> ngx-spinner 
+            https://napster2210.github.io/ngx-spinner/
+            
+            npm install :
+                npm install ngx-spinner --save
