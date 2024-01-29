@@ -2562,4 +2562,27 @@ January 29 2024:
         remove the headers added in the members service
 
 
-    
+    Routing to the detailed page:
+        member-detail.component.ts:
+            inject the member service and activated route and pass in the member username passed in from the router
+
+            export class MemberDetailComponent implements OnInit {
+                member: Member | undefined;
+
+                //Route allows access to the the username passed into the routers upon loading this component
+                constructor(private memberService: MembersService, private route: ActivatedRoute){}
+
+                ngOnInit(): void {
+                    this.loadMember()
+                }
+
+                loadMember(){
+                    var username = this.route.snapshot.paramMap.get('username')
+                    if(!username) return;
+                    this.memberService.getMember(username).subscribe({
+                    next: member => this.member = member
+                    })
+                }
+            }
+        apply the router linke for the memebrs in the member card:
+            <button class="btn btn-primary" routerLink="/member/{{member.userName}}">
