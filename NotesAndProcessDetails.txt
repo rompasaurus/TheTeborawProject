@@ -3033,3 +3033,74 @@ Updating Resources:
         need to add the spinner to the appcomponent // the root component of the entire app allowing the spinner potential to show on any page or route:
             app.component.html:
                 <ngx-spinner type = "square-spin" [fullScreen] = "true"><p style="color: white" > Loading... </p></ngx-spinner>
+
+    TIme to cache the data you already done did load like, the users info  and the photos n such:
+        you can cache data within a service:
+            member service ftw:
+                add a global member list
+                    members : Member[] = [];
+
+                then either populate the members if its empty or return the member usinf of() rxjs to return an observable
+                    //member deets are conveniently housed in the member list, so if that was already loaded you can get it from there without phoning home
+                    getMembers(){
+                        if(this.members.length > 0) return of(this.members)
+                        return this.http.get<Member[]>(this.baseUrl + 'users').pipe(
+                        map(members =>{
+                            this.members = members
+                            return members
+                        })
+                    )}
+        now you will not a distinct lack of loading screen after loading memebrs for the first time and then loading it again
+
+        NOTE BUG: Journal and about pages redirect the user from the app entirely and clear out services 
+            this is prolly due to them not being in the same route child group and outside of them may want toplay around wiht this later to see 
+            what I can do to address that.
+
+        SHould also cache the individual member details as well 
+            //member deets are conveniently housed in the member list, so if that was already loaded you can get it from there without phoning home
+            getMember(username:string){
+                const member = this.members.find(x => x.userName === username)
+                if(member) return of(member)
+                return this.http.get<Member>(this.baseUrl + 'users/' + username);
+                //not needed any more now that jwt interceptor is in place
+                //return this.http.get<Member>(this.baseUrl + 'users/' + username, this.getHttpOptions());
+            }
+
+        also update profile changes need the cache to be updated as well:
+            //cached data needs updated so that the user can see his update details if he re-nav'd to his profile after updates
+            updateMember(member:Member){
+                return this.http.put(this.baseUrl + 'users', member).pipe(
+                map(()=>{
+                    const index = this.members.indexOf(member)
+                    //... is the spread operator will spread all the propertied of the member at this.members specified index and will map then
+                    // the properties from the parameter and updated member 1 to 1 , because they are the same type it will update each field with out
+                    // a literal loop needed to be defined
+                    this.members[index] = {...this.members[index], ...member}
+                })
+                )
+            }
+
+    Lastly Modify the way the members are load make it an observable:
+        allow for better readability.
+        MemberListComponent:
+            export class MemberListComponent implements OnInit {
+                members$ : Observable<Member[]> | undefined
+
+
+                constructor(private memberService:MembersService){}
+
+                ngOnInit(): void {
+                    this.members$ = this.memberService.getMembers();
+                }
+
+            }
+        MemberListComponent.html:
+            <div class="row">
+                <div class="col-2" *ngFor="let member of members$ | async">
+                    <app-member-card [member]="member"></app-member-card>
+                </div>
+            </div>
+
+    Conclusion:
+        Real fuckin neat section really learned a whole bunch of design pradignms with angular and services, and interceptors,
+        and how service act as singletons allowing for the caching of data reducing the db calll backs that occur
