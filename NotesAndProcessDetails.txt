@@ -2586,3 +2586,55 @@ January 29 2024:
             }
         apply the router linke for the memebrs in the member card:
             <button class="btn btn-primary" routerLink="/member/{{member.userName}}">
+
+    Creating the member  card template: member-detail card.ts:
+        <div class="row" *ngIf="member">
+            <div class="col-4">
+                <div class="card">
+                    <img src="{{member.photoUrl || './assets/user.png'}}" alt="{{member.knownAs}}"
+                        class="card-img-top img-thumbnail">
+                    <div class="card-body">
+                    <div>
+                        <strong>Location:</strong>
+                        <p>{{member.city}}</p>
+                    </div>
+                    <div>
+                        <strong>Age:</strong>
+                        <p>{{member.age}}</p>
+                    </div>
+                    <div>
+                        <strong>Last Active:</strong>
+                        <p>{{member.lastActive}}</p>
+                    </div>
+                    <div>
+                        <strong>Member Since:</strong>
+                        <p>{{member.created}}</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group d-flex">
+                        <button class="btn btn-primary">Like</button>
+                        <button class="btn btn-success">Message</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        Style:
+
+        .img-thumbnail{
+            margin: 25px;
+            width: 85%;
+            height: 85%;
+            }
+
+        .card-body{
+            padding: 0 25px;
+            }
+
+        .card-footer{
+            padding: 10px 20px;
+            border-top: none;
+            }
+
+    
