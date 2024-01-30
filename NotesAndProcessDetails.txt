@@ -3311,3 +3311,73 @@ January 30 2024:
         npm install:
             npm install ng2-file-upload --save
             what do you know it dont work for 17 fudger
+
+            I used the following, which ties it to the version you otherwise have installed (so you don't have to muck with the versions manually over time). Thanks for the tip!
+        package.json add
+            "overrides": {
+                "ng2-file-upload": {
+                "@angular/common": "$@angular/common",
+                "@angular/core": "$@angular/core"
+                }
+            }
+
+        Then cli install:
+            npm install ng2-file-upload --save
+
+
+        copy the ng2 file boiler plate 
+            to the photo editor
+
+        Add the file uploader module to the share modules:
+            import and export FileUploadModule
+
+        photoeditor component ts: 
+            quite alot going on here not sure what everything is dpoing will need to review later:
+                export class PhotoEditorComponent implements OnInit{
+                    @Input() member: Member | undefined
+                    uploader : FileUploader | undefined
+                    hasBaseDropzoneOver = false
+                    baseUrl = environment.apiUrl
+                    user: User |undefined
+                    constructor(private accountService: AccountService) {
+                        this.accountService.currentUser$.pipe(take(1)).subscribe({
+                        next: user=>{
+                            if(user) this.user = user
+                        }
+                        })
+                    }
+
+                    ngOnInit() {
+                        this.initializeUploader()
+                    }
+
+                    fileOverBase(e: any){
+                        this.hasBaseDropzoneOver = e;
+                    }
+                    initializeUploader(){
+                        this.uploader = new FileUploader({
+                        url: this.baseUrl + 'users/add-photo',
+                        authToken: 'Bearer ' + this.user?.token,
+                        isHTML5: true,
+                        allowedFileType: ['image'],
+                        removeAfterUpload: true,
+                        autoUpload: false,
+                        maxFileSize: 10 * 1024 *1024
+                        })
+                        this.uploader.onAfterAddingFile = (file) => {
+                        file.withCredentials = false
+                        }
+
+                        this.uploader.onSuccessItem = (item, response, status, headers){
+                        if(response){
+                            const photo = JSON.parse(response)
+                            this.member?.photos.push(photo)
+                        }
+                        }
+                    }
+                }
+
+        Adjust the html and type checks:
+            way too much code to really copy and paste byt 
+            photoeditor was modified to pull the boiler and add optionals to potential nulls and delete the extra progress bars and info to fit on tab 
+            styling added to allow file drag to highlight the upload box 
