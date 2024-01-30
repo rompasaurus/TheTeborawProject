@@ -1,6 +1,11 @@
+using System.Security.Claims;
+
 namespace TeborawAPI.Extensions;
 
-public class ClaimsPrincipalExtensions
+public static class ClaimsPrincipalExtensions
 {
-    
+    public static string GetUserName(this ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    }
 }

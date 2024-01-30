@@ -3147,3 +3147,167 @@ January 30 2024:
 
         Configure setting in the appsettings.json
             git ignore this file now 
+            add api details:
+                "CloudinarySettings":{
+                    "CloudName": "",
+                    "ApiKey": "",
+                    "ApiSecret": ""
+                },
+
+    Create helper cloudinarysetting.cs
+        public class CloudinarySettings
+        {
+            public string Name { get; set; }
+            public string ApiKey { get; set; }
+            public string ApiSecret { get; set; }
+        }
+    
+    Add the cloudinary service to ApplicationServiceExtensions using the helper to hose the env config vars
+        services.Configure <CloudinarySettings>(config.GetSection("CloudinarySettings"));
+
+
+    Create photo upload service :
+        create the interface first:
+            namespace TeborawAPI.Interfaces;
+            public interface IPhotoService
+            {
+                Task<ImageUploadResult> AppPhotoAsync(IFormFile file);
+                Task<DeletionResult> DeletePhotoAsync(string publicId);
+            }
+        Create the service implementing the interface:
+            public class PhotoService : IPhotoService
+            {
+                private readonly Cloudinary _cloudinary;
+                public PhotoService(IOptions<CloudinarySettings> config)
+                {
+                    var acc = new Account(
+                        config.Value.CloudName,
+                        config.Value.ApiKey,
+                        config.Value.ApiSecret
+                    );
+
+                    _cloudinary = new Cloudinary(acc);
+                }
+                public async Task<ImageUploadResult> AppPhotoAsync(IFormFile file)
+                {
+                    var uploadResults = new ImageUploadResult();
+                    if (file.Length > 0)
+                    {
+                        using var stream = file.OpenReadStream();
+                        var uploadParams = new ImageUploadParams
+                        {
+                            File = new FileDescription(file.FileName, stream),
+                            Transformation = new Transformation().Height(500).Width(500).Crop("fill").Gravity("face"),
+                            Folder = "Teboraw-net8"
+                        };
+                        uploadResults = await _cloudinary.UploadAsync(uploadParams);
+                    }
+
+                    return uploadResults;
+                }
+
+                public async Task<DeletionResult> DeletePhotoAsync(string publicId)
+                {
+                    var deleteParams = new DeletionParams(publicId);
+                    return await _cloudinary.DestroyAsync(deleteParams);
+                }
+            }
+        Add the service to extension:
+            services.AddScoped<IPhotoService, PhotoService>();
+
+    Inject that service to the users controller create endpoint:
+        create extension class to provide for the username and user data quickly and reduce code duplication:
+            public static class ClaimsPrincipalExtensions
+            {
+                public static string GetUserNamethis ClaimsPrincipal user)
+                {
+                    return user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                }
+            }
+
+        public static string GetUserNamethis ClaimsPrincipal user)
+            allows you to exted the ClaimsPrincipal as if you were inside the class itself adding a method or creating a class that extends it with additional functionality
+            its dope as fuck you dont have to go through all that noise just for one method and you can call it then like this:
+
+            var username = User.GetUserName();
+
+            UserController:
+                [HttpPost("add-photo")]
+                public async Task<ActionResult<PhotoDTO>> AddPhoto(IFormFile file)
+                {
+                    var user = await _userRepository.GetUserByUsernameAsync(User.GetUserName());
+                    if (user == null) return NotFound();
+                    var result = await _photoService.AppPhotoAsync(file);
+                    if(result.Error != null) return BadRequest(result.Error.Message);
+                    var photo = new Photo
+                    {
+                        Url = result.SecureUrl.AbsoluteUri,
+                        PublicId = result.PublicId
+                    };
+
+                    if (user.Photos.Count == 0) photo.IsMain = true;
+
+                    user.Photos.Add(photo);
+                    
+                    if(await _userRepository.SaveALlAsync()) return _mapper.Map<PhotoDTO>(photo);
+
+                    return BadRequest("Problem Adding Photo");
+                }
+
+    Testing the photo upload:
+        ran into image upload error:
+            hadd to install the standalone postman client to get it access to my local drive and all is 
+            
+        postman > teboraw > photos upload and delete test > Add photo 
+            set the body > file value to a local picture and watch teh magic
+
+        Quick not the key value is called File and that should match with what the parameter is called and spelled as in the :
+            user controller > addPhoto > IFormFile file
+
+    Return the right response for post request that creates a new resource:
+        SHould return ideally a 201 response instead of 200ok response 
+        this will have a location url response with the new content.
+        usercontroller:
+        //need to return a 201 response instead of 200 with new resource url not this way 
+            //if(await _userRepository.SaveALlAsync()) return _mapper.Map<PhotoDTO>(photo);
+            //This way below create a action or enpoint utl to the getuser endpoint passing in the username as an object 
+            //along with the mapped photo
+            if(await _userRepository.SaveALlAsync())
+                return CreatedAtAction(nameof(GetUser), 
+                    new { username = user.UserName }, 
+                    _mapper.Map<PhotoDTO>(photo));
+
+        retest the endpoint in postman and you will see an additiona field in the header returns with 
+        location : https://localhost:5001/api/Users/lisa 
+        along with a 201 reponse
+
+
+    Adding the phot upload component to angular:
+        ng cli:
+            ng g c member/photo-editor
+
+            html:
+                <div class="row" *ngIf="member">
+                    <div class="col-2" *ngFor="let photo of member.photos">
+                        <img src="{{photo.url}}" alt="photo of user" class="img-thumbnail mb-1">
+                        <div class="text-center">
+                        <button class="btn btn-sm">Main</button>
+                        <button class="btn btn-sm btn-danger"><i class="fa fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+
+        add the compoennt to the edit component tab:
+            <tab heading="Edit Photos">
+                <app-photo-editor [member]="member"></app-photo-editor>
+            </tab>
+
+    Create photo upload:
+        need to install the file uploader util 
+        ng2-file-upload
+            https://valor-software.com/ng2-file-upload/
+
+        npm install:
+            npm install ng2-file-upload --save
+            what do you know it dont work for 17 fudger

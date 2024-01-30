@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Data;
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
+using TeborawAPI.Extensions;
 using TeborawAPI.Interfaces;
 
 namespace TeborawAPI.Controllers;
@@ -14,11 +15,13 @@ public class UsersController : BaseAPIController
 {
     private readonly IUserRepository _userRepository;
     private readonly IMapper _mapper;
+    private readonly IPhotoService _photoService;
 
-    public UsersController(IUserRepository userRepository, IMapper mapper)
+    public UsersController(IUserRepository userRepository, IMapper mapper, IPhotoService photoService)
     {
         _userRepository = userRepository;
         _mapper = mapper;
+        _photoService = photoService;
     }
     
     [HttpGet]
@@ -45,8 +48,7 @@ public class UsersController : BaseAPIController
         //[0] > ex: {http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier: lisa}
         //nameidentifier: lisa or the value of 0 array memebr will be the user name as establishe in the Token service
         // Via new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
-        var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var user = await _userRepository.GetUserByUsernameAsync(username);
+        var user = await _userRepository.GetUserByUsernameAsync(User.GetUserName());
         
         if(user == null) return NotFound();
 
@@ -56,4 +58,33 @@ public class UsersController : BaseAPIController
 
         return BadRequest("Failed to Update User");
     }
+
+    [HttpPost("add-photo")]
+    public async Task<ActionResult<PhotoDTO>> AddPhoto(IFormFile file)
+    {
+        var user = await _userRepository.GetUserByUsernameAsync(User.GetUserName());
+        if (user == null) return NotFound();
+        var result = await _photoService.AppPhotoAsync(file);
+        if(result.Error != null) return BadRequest(result.Error.Message);
+        var photo = new Photo
+        {
+            Url = result.SecureUrl.AbsoluteUri,
+            PublicId = result.PublicId
+        };
+
+        if (user.Photos.Count == 0) photo.IsMain = true;
+
+        user.Photos.Add(photo);
+        //need to return a 201 response instead of 200 with new resource url not this way 
+        //if(await _userRepository.SaveALlAsync()) return _mapper.Map<PhotoDTO>(photo);
+        //This way below create a action or enpoint utl to the getuser endpoint passing in the username as an object 
+        //along with the mapped photo
+        if(await _userRepository.SaveALlAsync())
+            return CreatedAtAction(nameof(GetUser), 
+                new { username = user.UserName }, 
+                _mapper.Map<PhotoDTO>(photo));
+
+        return BadRequest("Problem Adding Photo");
+    }
+    
 }
