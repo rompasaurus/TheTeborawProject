@@ -3440,3 +3440,86 @@ January 30 2024:
                     }
 
             Amake sure to include the photos otherwize ef will be lazy and not load it on th elogin call
+
+            now to allow the user to set a main:
+                update the mmebr service to hit the update main photo endpoint:
+                    setMainPhoto(photId: number){
+                        return this.http.put(this.baseUrl + 'users/set-main-photo/' + photId, {})
+                    }
+                photo.editor.ts 
+                    setMainPhoto(photo: Photo){
+                        this.memberService.setMainPhoto(photo.id).subscribe({
+                        next: () => {
+                            if(this.user && this.member){
+                            this.user.photoUrl = photo.url
+                            // this will broadcas the phot update to all the subscribers ie the nave bar n such
+                            this.accountService.setCurrentUser(this.user)
+                            this.member.photoUrl = photo.url
+                            this.member.photos.forEach(p => {
+                                if(p.isMain) p.isMain = false
+                                if(p.id === photo.id) p.isMain = true;
+                            })
+                            }
+                        }
+                        })
+                    }
+
+                photo.editor.html:
+                //this code will disable the set main button if already main 
+                // and change styling based on if its main or not
+                    <button
+                        class="btn btn-sm"
+                        [disabled]="photo.isMain"
+                        (click)="setMainPhoto(photo)"
+                        [ngClass]="photo.isMain ? 'btn-success active' : 'btn-outline-success'"
+                    >Main</button>
+
+
+        Deleting Photos:
+            add api ep in userController:
+                [HttpDelete("delete-photo/{photoId}")]
+                public async Task<ActionResult> DeletePhoto(int photoId)
+                {
+                    var user = await _userRepository.GetUserByUsernameAsync(User.GetUserName());
+
+                    var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+                    
+                    if(photo == null) return NotFound();
+                    
+                    if(photo.IsMain) return BadRequest("You cannot delete your main photo.");
+                    
+                    if(photo.PublicId != null)
+                    {
+                        var result = await _photoService.DeletePhotoAsync(photo.PublicId);
+                        if(result.Error != null) return BadRequest(result.Error.Message);
+                    }
+
+                    user.Photos.Remove(photo);
+                    
+                    if(await _userRepository.SaveALlAsync()) return Ok();
+
+                    return BadRequest("Problem Deleting Photo");
+                }
+            add member service method to delete the photo:
+                deletePhoto(photoId:number){
+                    return this.http.delete(this.baseUrl + 'users/delete-photo/' + photoId)
+                }
+
+            Call the delete phot service from the photo editor:
+                deletePhoto(photoId:number){
+                    this.memberService.deletePhoto(photoId).subscribe({
+                    next: _ => {
+                        if(this.member){
+                        //this createed the member photo list with all photos but the one being deleted
+                        this.member.photos = this.member.photos.filter(x => x.id != photoId)
+                        }
+                    }
+                })
+                                
+            wire up the html template: 
+                  <button
+                        class="btn btn-sm btn-danger"
+                        [disabled]="photo.isMain"
+                        (click)="deletePhoto(photo.id)"
+                    ><i class="fa fa-trash"></i></button>
+        done diggity delete works yo!!!

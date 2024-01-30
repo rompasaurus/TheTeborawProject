@@ -1,11 +1,12 @@
 import {Component, Input, OnInit} from '@angular/core';
+import {Photo} from "../../_models/Photo";
 import {Member} from "../../_models/member";
 import {FileUploader, FileUploadModule} from "ng2-file-upload";
 import {environment} from "../../../environments/environment";
 import {AccountService} from "../../_services/account.service";
 import {take} from "rxjs";
 import {User} from "../../_models/user";
-import {response} from "express";
+import {MembersService} from "../../_services/members.service";
 
 @Component({
   selector: 'app-photo-editor',
@@ -18,7 +19,7 @@ export class PhotoEditorComponent implements OnInit{
   hasBaseDropZoneOver = false
   baseUrl = environment.apiUrl
   user: User |undefined
-  constructor(private accountService: AccountService) {
+  constructor(private accountService: AccountService, private memberService: MembersService) {
     this.accountService.currentUser$.pipe(take(1)).subscribe({
       next: user=>{
         if(user) this.user = user
@@ -33,6 +34,36 @@ export class PhotoEditorComponent implements OnInit{
   fileOverBase(e: any){
     this.hasBaseDropZoneOver = e;
   }
+
+  setMainPhoto(photo: Photo){
+    this.memberService.setMainPhoto(photo.id).subscribe({
+      next: () => {
+        if(this.user && this.member){
+          this.user.photoUrl = photo.url
+          // this will broadcast the phot update to all the subscribers ie the nave bar n such
+          this.accountService.setCurrentUser(this.user)
+          this.member.photoUrl = photo.url
+          this.member.photos.forEach(p => {
+            if(p.isMain) p.isMain = false
+            if(p.id === photo.id) p.isMain = true;
+          })
+        }
+      }
+    })
+  }
+
+  deletePhoto(photoId:number){
+    this.memberService.deletePhoto(photoId).subscribe({
+      next: _ => {
+        if(this.member){
+          //this createed the member photo list with all photos but the one being deleted
+          this.member.photos = this.member.photos.filter(x => x.id != photoId)
+        }
+      }
+    })
+
+  }
+
   initializeUploader(){
     this.uploader = new FileUploader({
       url: this.baseUrl + 'users/add-photo',

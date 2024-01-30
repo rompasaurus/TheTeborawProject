@@ -46,6 +46,14 @@ export class MembersService {
     )
   }
 
+  setMainPhoto(photId: number){
+    return this.http.put(this.baseUrl + 'users/set-main-photo/' + photId, {})
+  }
+
+  deletePhoto(photoId:number){
+    return this.http.delete(this.baseUrl + 'users/delete-photo/' + photoId)
+  }
+
   //need a way to pass authentication, the wrong way first then the proper way later
   // getHttpOptions(){
   //   const userString = localStorage.getItem('user')
