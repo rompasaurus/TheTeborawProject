@@ -36,14 +36,15 @@ public class AccountController: BaseAPIController
         return new UserDTO()
         {
             Username = user.UserName,
-            Token = _tokenService.CreateToken(user)
+            Token = _tokenService.CreateToken(user),
+            PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url
         };
     }
 
     [HttpPost("login")]
     public async Task<ActionResult<UserDTO>> Login(LoginDTO loginDTO)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName.ToLower() == loginDTO.Username.ToLower());
+        var user = await _context.Users.Include(p => p.Photos).FirstOrDefaultAsync(u => u.UserName.ToLower() == loginDTO.Username.ToLower());
         
         if (user == null) return Unauthorized("Invalid Username");
         //validate password by reversing the hash algo 
@@ -59,7 +60,8 @@ public class AccountController: BaseAPIController
         return new UserDTO()
         {
             Username = user.UserName,
-            Token = _tokenService.CreateToken(user)
+            Token = _tokenService.CreateToken(user),
+            PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url
         };
 
     }
