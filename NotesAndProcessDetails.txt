@@ -3381,3 +3381,62 @@ January 30 2024:
             way too much code to really copy and paste byt 
             photoeditor was modified to pull the boiler and add optionals to potential nulls and delete the extra progress bars and info to fit on tab 
             styling added to allow file drag to highlight the upload box 
+
+        Allow selection of main photo:
+            create a endpoint in th euser controller to set main photo:
+                quite a bit of null checking here 
+                [HttpPut("set-main-photo/{photoId}")]
+                public async Task<ActionResult> SetMainPhoto(int photoId)
+                {
+                    var user = await _userRepository.GetUserByUsernameAsync(User.GetUserName());
+                    
+                    if(user == null) return NotFound();
+                    
+                    var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+                    
+                    if(photo == null) return NotFound();
+                    
+                    if (photo.IsMain) return BadRequest("This is already the main photo!");
+                    
+                    var currentMain = user.Photos.FirstOrDefault(x => x.IsMain);
+
+                    if (currentMain != null) currentMain.IsMain = false;
+                    photo.IsMain = true;
+                    
+                    if(await _userRepository.SaveALlAsync()) return NoContent();
+
+                    return BadRequest("There was a problem setting the main photo");
+                }
+
+            postman is happy 
+
+        Now to set the ui to allow for main photo setting:
+            add the photo to the navebar:
+                need to apply the photo url of the main photo to the userDto Object:
+                    public string PhotoUrl { get; set; }
+                return this value with the account contorller getuser endpoint:
+                    return new UserDTO()
+                    {
+                        Username = user.UserName,
+                        Token = _tokenService.CreateToken(user),
+                        PhotoUrl = user.Photos.Include(p => p.Photos).FirstOrDefault(x => x.IsMain)?.Url
+                    };
+                add prop to user ts as well 
+                    export interface User {
+                        username: string;
+                        token: string;
+                        photoUrl: string;
+                    }
+            refactor the current user local storage call in account services
+
+            in the navbar.htm set the now availble image url to the user:
+                add image tage to the user dropdown
+                    <img src="{{user.photoUrl}}" alt="user photo">
+                add a bit of styling 
+                    img{
+                        max-height: 50px;
+                        border: 2px solid white;
+                        display: inline;
+                    }
+
+            Amake sure to include the photos otherwize ef will be lazy and not load it on th elogin call
