@@ -1,32 +1,38 @@
-<form #registerForm="ngForm" (ngSubmit)="register()" autocomplete="off">
+<form [formGroup]="registerForm" (ngSubmit)="register()" autocomplete="off">
     <h2 class="text-center text-primary">Sign Up</h2>
     <hr>
     <div class="mb-3">
-        <input type="text"
-            class="form-control"
-            name="username"
-            [(ngModel)]="model.username"
-            placeholder="Username">
+      <label style="margin-right: 10px"> I am a: </label>
+      <label class="form-check-label">
+        <input type="radio" class="form-check-input" value="male" formControlName="gender"> Male
+      </label>
+      <label class="form-check-label ms-3">
+        <input type="radio" class="form-check-input" value="female" formControlName="gender"> Female
+      </label>
     </div>
-    <div class="text-center">
-        <input type="password" 
-            class="form-control"
-            name="password"
-            [(ngModel)]="model.password"
-            placeholder="Password">
-    </div>
-    <hr>
+    <app-text-input [formControl]="$any(registerForm.controls['username'])"
+                    [label]="'Username'"></app-text-input>
+    <app-text-input [formControl]="$any(registerForm.controls['knownAs'])"
+                    [label]="'Known As'"></app-text-input>
+    <app-date-picker [formControl]="$any(registerForm.controls['dateOfBirth'])"
+                    [label]="'Date Of Birth'" [maxDate]="maxDate"> </app-date-picker>
+    <app-text-input [formControl]="$any(registerForm.controls['city'])"
+                    [label]="'city'"></app-text-input>
+    <app-text-input [formControl]="$any(registerForm.controls['country'])"
+                    [label]="'country'"></app-text-input>
+    <app-text-input [formControl]="$any(registerForm.controls['username'])"
+                    [label]="'Username'"></app-text-input>
+    <app-text-input [formControl]="$any(registerForm.controls['password'])"
+                    [label]="'Password'"
+                    [type]="'password'"></app-text-input>
+    <app-text-input [formControl]="$any(registerForm.controls['confirmPassword'])"
+                    [label]="'Confirm Password'"
+                    [type]="'password'"></app-text-input>
+
     <div class="text-center">
         <button class="btn btn-success me-2" type="submit">Register</button>
         <button class="btn btn-default" type="button" (click)="cancel()">Cancel</button>
     </div>
-    <!-- hiding this for now prolly wont need it again but a good ex of parent to child comms -->
-    <!-- <div class="mb-3">
-        <label> Who is your favorite user</label>
-        <select name="favorit" id="fav" class="form-select">
-            <option *ngFor="let user of usersFromHomeComponent" [value] ="user.username"> 
-                {{user.userName}}
-            </option>
-        </select>
-    </div> -->
 </form>
+<p> Form value: {{registerForm.value | json }}</p>
+<p> Form Status: {{registerForm.status | json}}</p>

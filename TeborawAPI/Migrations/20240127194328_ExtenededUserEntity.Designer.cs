@@ -34,11 +34,9 @@ namespace TeborawAPI.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("City")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Country")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Created")
@@ -48,34 +46,27 @@ namespace TeborawAPI.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Gender")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Interests")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Introduction")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("KnownAs")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("LastActive")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LookingFor")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<byte[]>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("bytea");
 
                     b.Property<byte[]>("PasswordSalt")
-                        .IsRequired()
                         .HasColumnType("bytea");
 
                     b.Property<string>("UserName")

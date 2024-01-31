@@ -51,14 +51,14 @@ namespace TeborawAPI.Migrations
                 name: "Interests",
                 table: "Users",
                 type: "text",
-                nullable: false,
+                nullable: true,
                 defaultValue: "");
 
             migrationBuilder.AddColumn<string>(
                 name: "Introduction",
                 table: "Users",
                 type: "text",
-                nullable: false,
+                nullable: true,
                 defaultValue: "");
 
             migrationBuilder.AddColumn<string>(
@@ -72,14 +72,14 @@ namespace TeborawAPI.Migrations
                 name: "LastActive",
                 table: "Users",
                 type: "timestamp with time zone",
-                nullable: false,
+                nullable: true,
                 defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
 
             migrationBuilder.AddColumn<string>(
                 name: "LookingFor",
                 table: "Users",
                 type: "text",
-                nullable: false,
+                nullable: true,
                 defaultValue: "");
 
             migrationBuilder.CreateTable(

@@ -45,15 +45,12 @@ namespace TeborawAPI.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Gender")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Interests")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Introduction")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("KnownAs")
@@ -64,7 +61,6 @@ namespace TeborawAPI.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LookingFor")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<byte[]>("PasswordHash")

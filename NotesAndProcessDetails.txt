@@ -3523,3 +3523,289 @@ January 30 2024:
                         (click)="deletePhoto(photo.id)"
                     ><i class="fa fa-trash"></i></button>
         done diggity delete works yo!!!
+
+January 31, 2024:
+    Reactive Forms:
+        goals:
+            using reactive forms 
+            angular validation 
+            custom validatior 
+            reusable form controls 
+            date imputs 
+
+    Need to import reactive form app.module:
+        imports:[ReactiveFormsModule]
+
+    registerComponent change from template forms to reactive:
+        reactive forms are component base instead embedded in the template as ngForms better for testing,
+
+        create form prop in the component:
+            registerForm: FormData | undefined
+              initializeFrom(){
+                this.registerForm = new FormGroup({
+                    username: new FormControl(),
+                    password: new FormControl(),
+                    confirmPassword: new FormControl()
+                    })
+                }
+
+        in the html template decLare as formgroup instead of ngForm:  
+            <form [formGroup]="registerForm" (ngSubmit)="register()" autocomplete="off">
+
+            convert the input to a formcontrol going from :
+            <input type="text"
+                class="form-control"
+                name="username"
+                [(ngModel)]="model.username"
+                placeholder="Username">
+            to:
+                <input type="text"
+                    class="form-control"
+                    formControlName="username"
+                    placeholder="Username">
+
+            add a bit of debuggalation for now to see vals 
+            <p> Form value: {{registerForm.value | json }}</p>
+            <p> Form Status: {{registerForm.status | json}}</p>
+
+    Validate dat form:
+        need to do that in the ts component just need to pass in the validator options 
+              initializeFrom(){
+                this.registerForm = new FormGroup({
+                username: new FormControl('Hello', Validators.required),
+                password: new FormControl('',[Validators.required, Validators.minLength(6), Validators.maxLength(30)]),
+                confirmPassword: new FormControl('', Validators.required)
+            })
+
+        match the password and confirm password field:
+                confirmPassword: new FormControl('', [Validators.required, this.matchValues('password')])
+                })
+            }
+
+            matchValues(matchTo: string) : ValidatorFn{
+                return(control: AbstractControl) => {
+                return control.value === control.parent?.get(matchTo)?.value ? null : {notMatching : true}
+                }
+            }
+
+        now the confirm password is dependent on the password field to match however the password field does not depend on the confirm 
+        meaning user could end up correcting the password field and the 
+        form will still be valid cahnge in the password does not trigger a validation check:
+
+        need to add a listener or observer subscribtion on the password control:
+            this.registerForm.controls['password'].valueChanges.subscribe({
+                next: () => this.registerForm.controls['confirmPassword'].updateValueAndValidity()
+            })
+
+        add validation ui elements:
+            add this to the field
+                <input type="text"
+                    [class.is-invalid]="registerForm.get('username')?.errors && registerForm.get('username')?.touched"
+                    class="form-control"
+                    autocomplete="off"
+                    formControlName="username"
+                    placeholder="Username">
+            this will highlight the field if empty and the user has previously touched it:
+
+            add div to show th input error:    
+                <div class="mb-3">
+                    <input type="text"
+                        [class.is-invalid]="registerForm.get('username')?.errors && registerForm.get('username')?.touched"
+                        class="form-control"
+                        autocomplete="off"
+                        formControlName="username"
+                        placeholder="Username">
+                    <div class="invalid-feedback">Please Enter Valid Username</div>
+                </div>
+            multiple validation div:
+                    <div class="mb-3">
+                        <input type="password"
+                        [class.is-invalid]="registerForm.get('password')?.errors && registerForm.get('password')?.touched"
+                        class="form-control"
+                        formControlName = "password"
+                        placeholder="Password">
+                    <div class="invalid-feedback" *ngIf="registerForm.get('password')?.hasError('required')">
+                        Please Enter a Password
+                    </div>
+                    <div class="invalid-feedback" *ngIf="registerForm.get('password')?.hasError('minlength')">
+                        PW must be atleast 6 chars
+                    </div>
+                    <div class="invalid-feedback" *ngIf="registerForm.get('password')?.hasError('required')">
+                        PW must be at most 30 Charaters
+                    </div>
+                    </div>
+
+        THeres gotta be a less messy to do this:
+            Create reusable text input components 
+                create a new component:
+                    ng g c _forms/text-input
+            
+            text-input.ts:
+            implement ControlValueAccessor which allows the component to act as a bridge between the angular forms api and a netive element in the dom
+                export class TextInputComponent implements ControlValueAccessor
+                      registerOnChange(fn: any): void {
+                        }
+
+                        registerOnTouched(fn: any): void {
+                        }
+
+                        writeValue(obj: any): void {
+                        }
+                        get control():FormControl{
+                            return this.ngControl.control as FormControl
+                        }
+
+            text-input html:
+                <div class="mb-3">
+                    <input type="{{type}}"
+                            [class.is-invalid]="control.touched && control.invalid"
+                            class="form-control"
+                            [formControl]="control"
+                            placeholder={{label}}
+                    >
+                    <div class="invalid-feedback" *ngIf="control.errors?.['required']">
+                        Please Enter a {{label}}
+                    </div>
+                    <div class="invalid-feedback" *ngIf="control.errors?.['minlength']">
+                        {{label}} must be at least {{ control.errors?.['minlength'].requiredLength}} characters
+                    </div>
+                    <div class="invalid-feedback" *ngIf="control.errors?.['maxlength']">
+                        {{label}} must be at most {{ control.errors?.['maxlength'].requiredLength}} characters
+                    </div>
+                    <div class="invalid-feedback" *ngIf="control.errors?.['notMatching']">
+                        Passwords do not match
+                    </div>
+                </div>
+
+            the component can now be generated and added to the register template:
+                    <app-text-input [formControl]="$any(registerForm.controls['username'])" [label]="'Username'"></app-text-input>
+                    <app-text-input [formControl]="$any(registerForm.controls['password'])" [label]="'Password'" [type]="'password'"></app-text-input>
+                    <app-text-input [formControl]="$any(registerForm.controls['confirmPassword'])" [label]="'Confirm Password'" [type]="'password'"></app-text-input>
+
+
+            Form Builder to simplify forms:
+                inject private fb : FormBuilder
+                initialize form via:
+                    this.registerForm = this.fb.group({
+                        username: ['', Validators.required],
+                        password: ['',[Validators.required, Validators.minLength(6), Validators.maxLength(30)]],
+                        confirmPassword:['', [Validators.required, this.matchValues('password')]]
+                    })
+
+    Expand the forms:   
+            <app-text-input [formControl]="$any(registerForm.controls['username'])"
+                    [label]="'Username'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['knownAs'])"
+                            [label]="'Known As'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['dateOfBirth'])"
+                            [label]="'Date Of Birth'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['city'])"
+                            [label]="'city'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['country'])"
+                            [label]="'country'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['username'])"
+                            [label]="'Username'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['password'])"
+                            [label]="'Password'"
+                            [type]="'password'"></app-text-input>
+            <app-text-input [formControl]="$any(registerForm.controls['confirmPassword'])"
+                            [label]="'Confirm Password'"
+                            [type]="'password'"></app-text-input>
+        
+        this.registerForm = this.fb.group({
+            gender:           ['male'],
+            username:         ['', Validators.required],
+            knownAs:          ['', Validators.required],
+            dateOfBirth:      ['', Validators.required],
+            city:             ['', Validators.required],
+            country:          ['', Validators.required],
+            password:         ['',[Validators.required, Validators.minLength(6), Validators.maxLength(30)]],
+            confirmPassword:  ['', [Validators.required, this.matchValues('password')]]
+        })
+
+    Input validation dates:
+        creating a date picker component that is not browser specific:
+            mgx-bootstrap datepicker :
+                ng g c _forms/date-picker
+
+            add ngx datepick module:
+                import and export BsDatepickerModule in shared modules 
+            
+            date-picker component:
+                 DatePickerComponen implements ControlValueAccessor
+                    @Input() label = ''
+                    @Input() maxDate: Date | undefined;
+                    bsConfig: Partial<BsDatepickerModule> | undefined
+                    constructor(@Self() public ngControl: NgControl) {
+                        this.ngControl.valueAccessor = this
+                        this.bsConfig = {
+                        containerClass : 'theme-red',
+                        dateInputFormat: 'DD MMMM YYYY'
+                        }
+                    }
+
+                <div class="md-3">
+                    <input
+                        type="text"
+                        [class.is-invalid]="control.touched && control.invalid"
+                        [formControl]="control"
+                        placeholder="{{label}}"
+                        bsDatepicker
+                        [bsConfig]="bsConfig"
+                        [maxDate]="maxDate"
+                    >
+                    <div *ngIf="control.errors?.['required']" class="invalid-feedback">
+                        {{label}} is required
+                    </div>
+                </div>
+
+
+            Register component:
+                <app-date-picker [formControl]="$any(registerForm.controls['dateOfBirth'])"
+                    [label]="'Date Of Birth'"> </app-date-picker>
+
+            put a minumum dob in place:
+                register component:
+                    this.maxDate.setFullYear(this.maxDate.getUTCFullYear() -18)
+
+                THis will limit the year ange of selectable dates from the picker 
+
+    Server side validation:
+        add the user field to the dto Register dto 
+    
+            [Required] public string KnownAs { get; set; }
+            [Required] public string Gender { get; set; }
+            [Required] public DateOnly? DateOfBirth { get; set; } // optional to make required work
+            [Required] public string City { get; set; }
+            [Required] public string Country { get; set; }  
+
+        setup automapper:
+            CreateMap<RegisterDTO, AppUser>();
+               
+        inject the automapper to the account controller:
+            IMapper mapper)
+
+        Adjust register enpoint with automapper:
+            [HttpPost("register")] // api/account/register
+            public async Task<ActionResult<UserDTO>> Register(RegisterDTO registerDTO)
+            {
+                if (await UserExists(registerDTO.Username)) return BadRequest("Username already exists");
+
+                using var hmac = new HMACSHA512();
+                
+                var user = _mapper.Map<AppUser>(registerDTO);
+                
+                user.UserName = registerDTO.Username.ToLower();
+                user.PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDTO.Password)),
+                user.PasswordSalt = hmac.Key;
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                return new UserDTO()
+                {
+                    Username = user.UserName,
+                    Token = _tokenService.CreateToken(user),
+                    PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url,
+                    KnownAs = user.KnownAs
+                };
+            }
