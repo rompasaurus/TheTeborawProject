@@ -2,6 +2,8 @@ import {Component, Input, Output, EventEmitter, OnInit} from '@angular/core';
 import { AccountService } from '../_services/account.service';
 import { ToastrService } from 'ngx-toastr';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from "@angular/forms";
+import {Router} from "@angular/router";
+import {error} from "@angular/compiler-cli/src/transformers/util";
 
 @Component({
   selector: 'app-register',
@@ -11,10 +13,10 @@ import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from
 export class RegisterComponent implements OnInit{
   @Input() usersFromHomeComponent: any;
   @Output() cancelRegister = new EventEmitter();
-  model: any ={}
   registerForm: FormGroup = new FormGroup<any>({})
   maxDate : Date = new Date()
-  constructor(private accountService: AccountService, private toastr: ToastrService, private fb : FormBuilder){}
+  validationErrors: string[] | undefined
+  constructor(private accountService: AccountService, private toastr: ToastrService, private fb : FormBuilder, private router: Router){}
 
   ngOnInit(): void {
     this.initializeFrom()
@@ -22,13 +24,18 @@ export class RegisterComponent implements OnInit{
   }
 
   register() {
-    // this.accountService.register(this.model).subscribe({
-    //   next: response => {
-    //     console.log("registration complete",response);
-    //     this.cancel();
-    //   },
-    //   //error: error => this.toastr.error(error.error)
-    // })
+    const dob = this.getDateOnly(this.registerForm.controls['dateOfBirth'].value)
+    const values = {...this.registerForm.value, dateOfBirth: dob}
+    console.log("values: ", values)
+    this.accountService.register(values).subscribe({
+      next: response => {
+        console.log("registration complete",response);
+        this.router.navigateByUrl('/members')
+      },
+      error: error => {
+        this.validationErrors = error
+      }
+    })
     console.log(this.registerForm?.value)
   }
 
@@ -57,6 +64,12 @@ export class RegisterComponent implements OnInit{
     this.cancelRegister.emit(false)
   }
 
+  private getDateOnly(dob : string | undefined){
+    if(!dob) return
+    let theDob = new Date(dob);
+    return new Date(theDob.setMinutes(theDob.getMinutes() - theDob.getTimezoneOffset()))
+      .toISOString().slice(0,10)
+  }
 
 }
 

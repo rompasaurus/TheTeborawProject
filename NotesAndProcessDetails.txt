@@ -3809,3 +3809,61 @@ January 31, 2024:
                     KnownAs = user.KnownAs
                 };
             }
+
+    Client Side Registration:
+        registerComponent:
+            Redirect to members page:
+                inject router and use it to redirect on success register
+                  register() {
+                        this.accountService.register(this.model).subscribe({
+                        next: response => {
+                            console.log("registration complete",response);
+                            this.router.navigateByUrl('/members')
+                        },
+                        })
+                        console.log(this.registerForm?.value)
+                    }
+
+            Create validation error instead of toast message:
+                pipe the error into  a string array upon register failure
+                error: error => {
+                    this.validationErrors = error
+                }
+            
+        registerComponent.html:
+            add the validation errors if exists:
+                <div class="row" *ngIf="validationErrors">
+                    <ul class="text-danger">
+                        <li *ngFor="let error of validationErrors">{{error}}</li>
+                    </ul>
+                </div>
+
+        registerComponent.ts:
+            needs to use the reactive form instead of the ng form:
+                this.accountService.register(this.registerForm.value)
+            need to message the date input:
+                to utc standard remove the date time offset dont need time for dob
+                private getDateOnly(dob : string | undefined){
+                    if(!dob) return
+                    let theDob = new Date(dob);
+                    return new Date(theDob.setMinutes(theDob.getMinutes() - theDob.getTimezoneOffset()))
+                    .toISOString().slice(0,10)
+                }
+
+        Disable register button if form not valid:
+            <button class="btn btn-success me-2" type="submit" [disabled]="!registerForm.valid">Register</button>
+
+        prevent form submition on template if form isnt valid:
+            <form [formGroup]="registerForm" (ngSubmit)="registerForm.valid && register()" autocomplete="off">
+
+        photo upload does not auto update the profile pic need to :
+            PhotoEditorComponent.ts:
+                    this.uploader.onSuccessItem = (item, response, status, headers) => {
+                        if(response){
+                            const photo = JSON.parse(response)
+                            this.member?.photos.push(photo)
+                            if(photo.isMain && this.user && this.member){
+                            this.user.photoUrl = photo.url
+                            this.member.photoUrl = photo.url
+                            this.accountService.setCurrentUser(this.user)
+                        }
