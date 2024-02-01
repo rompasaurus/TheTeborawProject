@@ -16,7 +16,7 @@ export class MembersService {
 
   getMembers(userParams : UserParams){
     let params = this.getPaginationHeaders(userParams.pageNumber, userParams.pageSize);
-
+    console.log("Getting members form params: ", userParams)
     params = params.append('minAge', userParams.minAge)
     params = params.append('maxAge', userParams.maxAge)
     params = params.append('gender', userParams.gender)

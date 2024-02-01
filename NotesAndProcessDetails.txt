@@ -4209,3 +4209,43 @@ February 2 2024
             MemberListComponent :
                 add   genderList = [{value: 'male',display: 'males'}, {value: 'female',display: 'females'}]
                 add resetFilters()
+                    resetFilter(){
+                        if(this.user){
+                        this.userParams = new UserParams(this.user)
+                        this.loadMembers();
+                        }
+                    }
+
+            Create the filter form  in membet-list.component.html:
+              <form #form="ngForm" class="d-flex mb-3" (ngSubmit)="loadMembers()" autocomplete="off">
+                <div class="d-flex mx-2">
+                <label class="col-form-label">Age from: </label>
+                <input
+                    type="number"
+                    class="form-control ms-1"
+                    style="width: 70px;"
+                    name="minAge"
+                    [(ngModel)]="userParams.minAge"
+                >
+                </div>
+                <div class="d-flex mx-2">
+                <label class="col-form-label">Age to: </label>
+                <input
+                    type="number"
+                    class="form-control ms-1"
+                    style="width: 70px;"
+                    name="maxAge"
+                    [(ngModel)]="userParams.maxAge"
+                >
+                </div>
+                <div class="d-flex px-2">
+                <label class="col-form-label me-2"> Show: </label>
+                <select name="gender"
+                        style="width: 130px"
+                        class="form-select ms-1"
+                        [ngModel]="userParams.gender">
+                        <option *ngFor="let gender of genderList" [value]="gender.value">
+                            {{gender.display}}
+                        </option>
+                </select>
+            </div>
