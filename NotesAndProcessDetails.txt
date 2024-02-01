@@ -4005,3 +4005,43 @@ February 2 2024
                     }
                         
             Bug: Pagination didnt properly return due to double parathenses
+
+    Setup Client side Pagination:
+    //generalized interface and class implementation to retrieve paginated data from the api and keep track of it 
+        Create new model :  
+            _models/pagination.ts
+                export interface Pagination{
+                    currentPage: number
+                    itemsPerPage: number
+                    totalItems: number
+                    totalPages: number
+
+                }
+
+                export class PaginatedResult<T>{
+                    result?: T
+                    pagination?: Pagination 
+                }
+
+        update member service to use the paginated results:
+          getMembers(page? : number, itemsPerPage?: number){
+            let params = new HttpParams()
+            if(page && itemsPerPage){
+                params = params.append('pageNumber', page)
+                params = params.append('pageSize', itemsPerPage)
+            }
+            return this.http.get<Member[]>(this.baseUrl + 'users', {observe: 'response', params}).pipe(
+                map(response => {
+                    if(response.body){
+                        this.paginatedResult.result = response.body
+                    }
+                    const pagination = response.headers.get('Pagination')
+                    if(pagination){
+                        this.paginatedResult.pagination = JSON.parse(pagination)
+                    }
+                    return this.paginatedResult
+                })
+            )  
+          }
+
+        need to update the member-list component and html to handle this paginate datatype
