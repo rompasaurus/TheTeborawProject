@@ -4045,3 +4045,84 @@ February 2 2024
           }
 
         need to update the member-list component and html to handle this paginate datatype
+            created load members that utilized ned service getmembrs call with pagination in the header:
+              ngOnInit(): void {
+                    //this.members$ = this.memberService.getMembers();
+                    this.loadMembers()
+                }
+
+                loadMembers(){
+                    this.memberService.getMembers(this.pageNumber, this.pageSize).subscribe({
+                    next: response => {
+                        if(response.result){
+                        this.members = response.result
+                        this.pagination = response.pagination
+                        }
+                    }
+                    })
+                }
+
+        ADd a component to allow page selection and count:
+            pull the pagination component from ngx-bootstrap:
+                PaginationModule > shared Module.ts
+                    import annd export PaginationModule.forRoot()
+
+            custom Links content get the template from site:
+                https://valor-software.com/ngx-bootstrap/#/components/pagination?tab=overview
+                <pagination [boundaryLinks]="true" [totalItems]="77"
+                            previousText="&lsaquo;" nextText="&rsaquo;" firstText="&laquo;" lastText="&raquo;">
+                </pagination>
+
+            add the template code to the member-list component .htm:
+                <div class="d-flex justify-content-center" *ngIf="pagination">
+                    <pagination
+                        [boundaryLinks]="true"
+                        [totalItems]="pagination.totalItems"
+                        [itemsPerPage]="pagination.itemsPerPage"
+                        [maxSize]="10"
+                        [(ngModel)]="pagination.currentPage"
+                        (pageChanged)="pageChanged($event)"
+                        previousText="&lsaquo;"
+                        nextText="&rsaquo;"
+                        firstText="&laquo;"
+                        lastText="&raquo;">
+                    </pagination>
+                </div>
+
+                create the page change ievent in the ts:
+                    pageChanged($event: any) {
+                        if(this.pageNumber != $event.page){
+                            this.pageNumber = $event.page
+                            this.loadMembers()
+                        }
+
+                    }
+
+        Exclude the logged in user from the member llst and only include opposite gender:
+            update the user params userparams.cs:
+                public string CurrentUserName { get; set; }
+                public string Gender { get; set; }
+
+        Update UserCOntroller.cs:
+            pull that data into the the getusers endpoint 
+                var currentUser = await _userRepository.GetUserByUsernameAsync(User.GetUserName());
+                userParams.CurrentUserName = currentUser.UserName;
+
+                if (string.IsNullOrEmpty(userParams.Gender))
+                {
+                    userParams.Gender = currentUser.Gender == "male" ? "female" : "male";
+                }
+        Modify userRepository to accomodate new fields and filter them out appropriately  as well:
+            public async Task<PageList<MemberDTO>> GetMembersAsync(UserParams userParams)
+            {
+                var query = _context.Users.AsQueryable();
+
+                query = query.Where(u => u.UserName != userParams.CurrentUserName);
+                query = query.Where(u => u.Gender == userParams.Gender);
+                return await PageList<MemberDTO>.CreateAsync(
+                    query.AsNoTracking().ProjectTo<MemberDTO>(_mapper.ConfigurationProvider),
+                    userParams.PageNumber, 
+                    userParams.PageSize);
+            }
+        Ran into issue where endpoint wouldnt be reached with out gender and username param being passed:
+            had to adjust the UserParams.cs to make thoese fields nullable bight need to address later
