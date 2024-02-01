@@ -4,6 +4,7 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
+using TeborawAPI.Helpers;
 using TeborawAPI.Interfaces;
 
 namespace TeborawAPI.Data;
@@ -47,11 +48,13 @@ public class UserRepository : IUserRepository
             .SingleOrDefaultAsync(x => x.UserName == username);
     }
 
-    public async Task<IEnumerable<MemberDTO>> GetMembersAsync()
+    public async Task<PageList<MemberDTO>> GetMembersAsync(UserParams userParams)
     {
-        return await _context.Users
+        var query =  _context.Users
             .ProjectTo<MemberDTO>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+            //Add this because this list is not expected to be modifioed from the front end tiny more effiecent
+            .AsNoTracking();
+        return await PageList<MemberDTO>.CreateAsync(query, userParams.PageNumber, userParams.PageSize);
     }
 
     public async Task<MemberDTO> GetMemberAsync(string username)

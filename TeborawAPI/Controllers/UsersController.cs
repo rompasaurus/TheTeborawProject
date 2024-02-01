@@ -8,6 +8,7 @@ using TeborawAPI.Data;
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
 using TeborawAPI.Extensions;
+using TeborawAPI.Helpers;
 using TeborawAPI.Interfaces;
 
 namespace TeborawAPI.Controllers;
@@ -26,9 +27,14 @@ public class UsersController : BaseAPIController
     }
     
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<MemberDTO>>> GetUsers()
+    //[FromQuery] will dictate the api endpoint call will be in the form of /api/users?pageNumber=1&pageSize=5
+    //By default with no query returns pageNumber 1 and pageSize 10
+    public async Task<ActionResult<IEnumerable<MemberDTO>>> GetUsers([FromQuery]UserParams userParams)
     {
-        var users = await _userRepository.GetMembersAsync();
+        var users = await _userRepository.GetMembersAsync(userParams);
+        
+        Response.AddPaginationHeader(new PaginationHeader(users.CurrentPage, users.PageSize,users.TotalCount, users.TotalPages));
+        
         return Ok(users);
         
     }

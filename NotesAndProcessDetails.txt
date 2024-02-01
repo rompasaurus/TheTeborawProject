@@ -3867,3 +3867,141 @@ January 31, 2024:
                             this.member.photoUrl = photo.url
                             this.accountService.setCurrentUser(this.user)
                         }
+
+February 2 2024
+    Paging Sorting and filtering:
+        Goals:
+            implement paging sorting and filtering 
+            learning how to implement on both api and client 
+            deferred execution using iqueryable 
+            using action filters 
+            adding a tameago pipe
+            implement caching on the client side 
+
+        avaodining performance problems by only show current viewable data:
+        pass parameters for pagination via query string
+
+        Deferred Excution using Iqueryable:
+            Iquery:
+                var query = context.users
+                    .where()
+                    .orderby()
+                    .take(5)
+                    .skip(5)
+            Execution:
+                querty.ToListAsync()
+
+    Paginating getMembers > UserRepository :
+        Create an API helper to genralize paging
+
+        PageList.cs :
+            //WIld shit is happening here, static method calls the db to determine how many entires exist in a given 
+            // db iqueryable source context then selects the data from the context base on the page number and size passed in
+            // returns a new instance of this class with the results. and stores the params passed in 
+            public class PageList<T> : List<T>
+            {
+                public PageList(IEnumerable<T> items, int count, int pageNumber, int pageSize)
+                {
+                    CurrentPage = pageNumber;
+                    TotalPages = (int) Math.Ceiling(count / (double) pageSize);
+                    PageSize = pageSize;
+                    TotalCount = count;
+                    //Adds the items to the class itself 
+                    AddRange(items);
+                }
+
+                public int CurrentPage { get; set; }
+                public int TotalPages { get; set; }
+                public int PageSize { get; set; }
+                public int TotalCount { get; set; }
+
+                
+                public static async Task<PageList<T>> CreateAsync(IQueryable<T> source,
+                    int pageNumber, int pageSize)
+                {
+                    var count = await source.CountAsync();
+                    var items = await source.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+                    return new PageList<T>(items, count, pageNumber, pageSize);
+                }
+            }
+
+        Create another helper to translate the pagelist to frond end accessible data:
+            PaginationHeader.cs:
+                public class PaginationHeader
+                {
+                    public PaginationHeader(int currentPage, int itemsPerPage, int totalItems, int totalPages)
+                    {
+                        CurrentPage = currentPage;
+                        ItemsPerPage = itemsPerPage;
+                        TotalItems = totalItems;
+                        TotalPages = totalPages;
+                    }
+
+                    public int CurrentPage { get; set; }
+                    public int ItemsPerPage { get; set; }
+                    public int TotalItems { get; set; }
+                    public int TotalPages { get; set; }
+                }
+            THis will be returned inside of an http respose need to extend the http class to allow for this:
+                extenstions/HttpExtensions
+                    namespace TeborawAPI.Extensions;
+
+                    public static class HttpExtensions
+                    {
+                        public static void AddPaginationHeader(this HttpResponse response, PaginationHeader header)
+                        {
+                            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+                            //Creates the custom header with the pagination data
+                            response.Headers.Append("Pagination", JsonSerializer.Serialize(header,jsonOptions));
+                            //Cors needs updated to allow for this nonsense as well
+                            response.Headers.Append("Access-Control-Expose-Headers", "Pagination");
+                        }
+                    }
+                    //not sur if add or append is the way to go for this header
+
+        Create userparams helpers so that the client can pass the pagination values:
+            helpers/UserParams:
+                public class UserParams
+                    {
+                        private const int MAX_PAGE_SIZE = 50;
+                        public int PageNumber { get; set; } = 1;
+                        private int _pageSize = 10;
+
+                        public int PageSize
+                        {
+                            get => _pageSize;
+                            set => _pageSize = (value > MAX_PAGE_SIZE) ? MAX_PAGE_SIZE : value;
+                        }
+                    }
+
+        Wire everything up to see what the hell is going on here:
+            IUserRepository:
+                Update:
+                    Task<IEnumerable<MemberDTO>> GetMembersAsync();
+                To:
+                    Task<PageList<MemberDTO>> GetMembersAsync(UserParams userParams);
+            UserRepository modify the implementation:
+                public async Task<PageList<MemberDTO>> GetMembersAsync(UserParams userParams)
+                    {
+                        var query =  _context.Users
+                            .ProjectTo<MemberDTO>(_mapper.ConfigurationProvider)
+                            //Add this because this list is not expected to be modifioed from the front end tiny more effiecent
+                            .AsNoTracking();
+                        return await PageList<MemberDTO>.CreateAsync(query, userParams.PageNumber, userParams.PageSize);
+                    }
+
+            UserController can now request paginated data:
+                GetUsers:
+                    /[FromQuery] will dictate the api endpoint call will be in the form of /api/users?pageNumber=1&pageSize=5
+                    [HttpGet]
+                    public async Task<ActionResult<IEnumerable<MemberDTO>>> GetUsers([FromQuery]UserParams userParams)
+                    {
+                        var users = await _userRepository.GetMembersAsync(userParams);
+                        
+                        Response.AddPaginationHeader(new PaginationHeader(users.CurrentPage, users.PageSize,users.TotalCount,users.TotalPages));
+                        
+                        return Ok(users);
+                        
+                    }
+                        
+            Bug: Pagination didnt properly return due to double parathenses
