@@ -4141,5 +4141,71 @@ February 2 2024
 
         
         Cleaning up the member Service:
-            pass the gender to save an api call UserDto:
+            pass the gender to save an api call UserDto and return it in the account controller:
+                            Gender = user.Gender
+            do it in the client as well:
+                user.ts:
+                    export interface User {
+                        username: string;
+                        token: string;
+                        photoUrl: string;
+                        KnownAs: string
+                        Gender: string
+                    }
 
+            change the member.service.ts > getMembers() call get rid of the params and send in one param object:
+                create the param object as a model:
+                    models/userParams.ts
+                        export class UserParams{
+                            gender: string
+                            minAge = 18
+                            maxAge = 99
+                            pageNumber = 1
+                            pageSIze = 5
+
+                            constructor(user: User) {
+                                this.gender = user.gender === 'female' ? 'male' : 'female'
+                            }
+                        }
+                pass that object in as params to getMembers in member service:
+                    getMembers(userParams : UserParams){
+                    let params = this.getPaginationHeaders(userParams.pageNumber, userParams.pageSize);
+
+                    creating funciton to build the params:
+                    no longer have to check for null as the class already intialiazes each variable
+                      private getPaginationHeaders(pageNumber:number, pageSize:number) {
+                            let params = new HttpParams()
+                            params = params.append('pageNumber', pageNumber)
+                            params = params.append('pageSize', pageSize)
+                            return params;
+                        }
+            Refactor the getmember http get call:
+                make it type generic for reusability:
+                private getPaginatedResults<T>(url: string, params: HttpParams) {
+                    const paginatedResult : PaginatedResult<T> = new PaginatedResult<T>
+                    return this.http.get<T>(url, {observe: 'response', params}).pipe(
+                    map(response => {
+                        if (response.body) {
+                        paginatedResult.result = response.body
+                        }
+                        const pagination = response.headers.get('Pagination')
+                        if (pagination) {
+                        paginatedResult.pagination = JSON.parse(pagination)
+                        }
+                        return paginatedResult
+                    })
+                    )
+                }
+            call it from get members:
+                getMembers(userParams : UserParams){
+                    let params = this.getPaginationHeaders(userParams.pageNumber, userParams.pageSize);
+                    params = params.append('minAge', userParams.minAge)
+                    params = params.append('maxAge', userParams.maxAge)
+                    params = params.append('gender', userParams.gender)
+                    return this.getPaginatedResults<Member[]>(this.baseUrl + 'users',params);
+
+
+        Add Filter buttons to the uid:
+            MemberListComponent :
+                add   genderList = [{value: 'male',display: 'males'}, {value: 'female',display: 'females'}]
+                add resetFilters()
