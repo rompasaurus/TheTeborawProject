@@ -4126,3 +4126,20 @@ February 2 2024
             }
         Ran into issue where endpoint wouldnt be reached with out gender and username param being passed:
             had to adjust the UserParams.cs to make thoese fields nullable bight need to address later
+
+        
+        Additional Filters:
+            By age :    
+                params:
+                    public int MinAge { get; set; } = 18;
+                    public int MaxAge { get; set; } = 100;
+            UserRepository:
+                take the param and filter by min and bax age:
+                    var minDob = DateOnly.FromDateTime(DateTime.Today.AddYears(-userParams.MaxAge - 1));
+                    var maxDob = DateOnly.FromDateTime(DateTime.Today.AddYears(userParams.MinAge));
+                    query = query.Where(u => u.DateOfBirth > minDob && u.DateOfBirth <= maxDob);
+
+        
+        Cleaning up the member Service:
+            pass the gender to save an api call UserDto:
+
