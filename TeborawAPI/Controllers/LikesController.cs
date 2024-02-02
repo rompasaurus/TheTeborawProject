@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
 using TeborawAPI.Extensions;
+using TeborawAPI.Helpers;
 using TeborawAPI.Interfaces;
 
 namespace TeborawAPI.Controllers;
@@ -23,7 +24,7 @@ public class LikesController : BaseAPIController
     public async Task<ActionResult> AddLike(string username)
     {
         
-        var sourceUserId = int.Parse(User.GetUserId());
+        var sourceUserId =User.GetUserId();
         var likedTargetUser = await _userRepository.GetUserByUsernameAsync(username);
         var sourceUser = await _likesRepository.GerUserWithLikes(sourceUserId);
         
@@ -49,9 +50,13 @@ public class LikesController : BaseAPIController
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LikeDTO>>> GetUserLikes(string predicate)
+    public async Task<ActionResult<PageList<LikeDTO>>> GetUserLikes([FromQuery] LikesParams likesParams)
     {
-        var users = await _likesRepository.GetUserLikes(predicate, int.Parse(User.GetUserId()));
+        likesParams.UserId = User.GetUserId();
+        var users = await _likesRepository.GetUserLikes(likesParams);
+        
+        Response.AddPaginationHeader(new PaginationHeader(users.CurrentPage, 
+            users.PageSize, users.TotalCount, users.TotalPages));
 
         return Ok(users);
     }

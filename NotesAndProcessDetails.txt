@@ -4707,23 +4707,125 @@ February 2 2024:
             </div>
 
             <div class="container mt-3">
-            <div class="d-flex">
-                <div class="btn-group" name="predicate">
-                <button
-                    class="btn btn-primary"
-                    btnRadio="liked"
-                    [(ngModel)]="predicate"
-                    (click)="loadLikes()"> Members I like </button>
-                <button
-                    class="btn btn-primary"
-                    btnRadio="likedBy"
-                    [(ngModel)]="predicate"
-                    (click)="loadLikes()"> Members Who Like Me </button>
+                <div class="d-flex">
+                    <div class="btn-group" name="predicate">
+                    <button
+                        class="btn btn-primary"
+                        btnRadio="liked"
+                        [(ngModel)]="predicate"
+                        (click)="loadLikes()"> Members I like </button>
+                    <button
+                        class="btn btn-primary"
+                        btnRadio="likedBy"
+                        [(ngModel)]="predicate"
+                        (click)="loadLikes()"> Members Who Like Me </button>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-2" *ngFor="let member of members">
+                    <app-member-card [member]="member"></app-member-card>
+                    </div>
                 </div>
             </div>
-            <div class="row mt-3">
-                <div class="col-2" *ngFor="let member of members">
-                <app-member-card [member]="member"></app-member-card>
-                </div>
-            </div>
-            </div>
+
+    Add Pagination to the liked list:
+        Create a paginationParams help .cs :
+            cut the pagination props out of the userparams into the pagination:
+            public class PaginationParams
+            {
+                private const int MAX_PAGE_SIZE = 50;
+                public int PageNumber { get; set; } = 1;
+                private int _pageSize = 10;
+
+                public int PageSize
+                {
+                    get => _pageSize;
+                    set => _pageSize = (value > MAX_PAGE_SIZE) ? MAX_PAGE_SIZE : value;
+                }
+
+        derive from pagination params in the userParams to retain functionality
+            public class UserParams : PaginationParams
+
+        create then another api helper class call likesParams and also derive that from paginationparams 
+            public class LikesParams : PaginationParams
+            {
+                public int UserId { get; set; }
+                public string predicate { get; set; }
+            }
+        
+        change ILikesRepository to take in this param :
+            Task<PageList<LikeDTO>> GetUserLikes(LikesParams likesParams);
+
+        Implement this in LikesRepository:
+            //Thanks to the pafelist only 4 lines need change to omplement page result for liked users
+            public async Task<PageList<LikeDTO>> GetUserLikes(LikesParams likesParams)
+            {
+                //remmember querables dont get executed
+                var users = _context.Users.OrderBy(u => u.UserName).AsQueryable();
+                var likes = _context.Likes.AsQueryable();
+
+                if (likesParams.predicate == "liked")
+                {
+                    likes = likes.Where(like => like.SourceUserId == likesParams.UserId);
+                    users = likes.Select(like => like.TargetUser);
+                }
+                
+                if (likesParams.predicate  == "likedBy")
+                {
+                    likes = likes.Where(like => like.TargetUserId == likesParams.UserId);
+                    users = likes.Select(like => like.SourceUser);
+                }
+
+                var likedUsers = users.Select(user => new LikeDTO
+                {
+                    UserName = user.UserName,
+                    KnownAs = user.KnownAs,
+                    Age = user.DateOfBirth.CalculateAge(),
+                    PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain).Url,
+                    City = user.City,
+                    Id = user.Id
+                });
+
+                return await PageList<LikeDTO>.CreateAsync(likedUsers, likesParams.PageNumber, likesParams.PageSize);
+            }
+
+        LikesController now need updated to work with the paged list:
+            public async Task<ActionResult<PageList<LikeDTO>>> GetUserLikes([FromQuery] LikesParams likesParams)
+            {
+                likesParams.UserId = User.GetUserId();
+                var users = await _likesRepository.GetUserLikes(likesParams);
+
+                return Ok(users);
+            }
+
+        get the client paged up now:
+            wire up the get like in memberService:
+                getLikes(predicate: string, pageNumber: number, pageSize:number){
+                    let params = this.getPaginationHeaders(pageNumber,pageSize)
+                    params = params.append('predicate', predicate)
+
+                    return this.getPaginatedResults<Member[]>(this.baseUrl + 'like', params)
+                }
+            
+            Add the ui to the list component:
+                .ts :
+                    loadLikes(){
+                        this.memberService.getLikes(this.predicate, this.pageNumber, this.pageSize).subscribe({
+                            next: response => {
+                            this.members = response.result
+                            this.pagination = response.pagination
+
+                            }
+                        })
+                        }
+
+                    pageChanged(event: any) {
+                        if(this.pageNumber != event.page){
+                            this.pageNumber = event.page
+                            this.loadLikes()
+                        }
+
+                .html:
+                    steal the member list pagination and alter slightly 
+                    
+                    

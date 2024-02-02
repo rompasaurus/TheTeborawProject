@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
 using TeborawAPI.Extensions;
+using TeborawAPI.Helpers;
 using TeborawAPI.Interfaces;
 
 namespace TeborawAPI.Data;
@@ -26,25 +27,25 @@ public class LikesRepository : ILikesRepository
             .FirstOrDefaultAsync(x => x.Id == userID);
     }
 
-    public async Task<IEnumerable<LikeDTO>> GetUserLikes(string predicate, int userId)
+    public async Task<PageList<LikeDTO>> GetUserLikes(LikesParams likesParams)
     {
         //remmember querables dont get executed
         var users = _context.Users.OrderBy(u => u.UserName).AsQueryable();
         var likes = _context.Likes.AsQueryable();
 
-        if (predicate == "liked")
+        if (likesParams.predicate == "liked")
         {
-            likes = likes.Where(like => like.SourceUserId == userId);
+            likes = likes.Where(like => like.SourceUserId == likesParams.UserId);
             users = likes.Select(like => like.TargetUser);
         }
         
-        if (predicate == "likedBy")
+        if (likesParams.predicate  == "likedBy")
         {
-            likes = likes.Where(like => like.TargetUserId == userId);
+            likes = likes.Where(like => like.TargetUserId == likesParams.UserId);
             users = likes.Select(like => like.SourceUser);
         }
 
-        return await users.Select(user => new LikeDTO
+        var likedUsers = users.Select(user => new LikeDTO
         {
             UserName = user.UserName,
             KnownAs = user.KnownAs,
@@ -52,8 +53,9 @@ public class LikesRepository : ILikesRepository
             PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain).Url,
             City = user.City,
             Id = user.Id
-        }).ToListAsync();
+        });
 
+        return await PageList<LikeDTO>.CreateAsync(likedUsers, likesParams.PageNumber, likesParams.PageSize);
     }
     
 }

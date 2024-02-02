@@ -1,5 +1,6 @@
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
+using TeborawAPI.Helpers;
 
 namespace TeborawAPI.Interfaces;
 
@@ -7,5 +8,5 @@ public interface ILikesRepository
 {
     Task<UserLike> GetUserLike(int sourceUserId, int targetUserId);
     Task<AppUser> GerUserWithLikes(int userID);
-    Task<IEnumerable<LikeDTO>> GetUserLikes(string predicate, int userId);
+    Task<PageList<LikeDTO>> GetUserLikes(LikesParams likesParams);
 }
