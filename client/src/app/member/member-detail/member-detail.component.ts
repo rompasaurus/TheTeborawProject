@@ -2,9 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { Member } from '../../_models/member';
 import { MembersService } from '../../_services/members.service';
 import { ActivatedRoute } from '@angular/router';
-import {NgIf} from "@angular/common";
+import {DatePipe, NgIf} from "@angular/common";
 import {TabsModule} from "ngx-bootstrap/tabs";
 import {GalleryItem, GalleryModule, ImageItem} from "ng-gallery";
+import {TimeagoModule} from "ngx-timeago";
 
 @Component({
   selector: 'app-member-detail',
@@ -13,7 +14,9 @@ import {GalleryItem, GalleryModule, ImageItem} from "ng-gallery";
   imports: [
     NgIf,
     TabsModule,
-    GalleryModule
+    GalleryModule,
+    DatePipe,
+    TimeagoModule
   ],
   styleUrl: './member-detail.component.css'
 })

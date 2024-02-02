@@ -4365,4 +4365,43 @@ February 2 2024:
                 params = params.append('orderBy', userParams.orderBy)
 
 
-    
+    Clean up the date formatinf:
+        MemberDetailComponent:
+            pipe that shit into a date:
+                <p>{{member.created | date}}</p>
+                dont forget to import the date pipe module import {DatePipe, NgIf} from "@angular/common";
+            Customize further:
+                 <p>{{member.created | date: 'longDate'}}</p>
+
+            Customize the last active to show the ammount of time not the actual date:
+                install ngx-timeago:
+                    npm install ngx-timeago --save
+                add to the shared-modules:
+                    import and export     TimeagoModule.forRoot()
+            Use the Timeago pipe now:
+                <p>{{member.lastActive | timeago}}</p>
+
+            update the member edit component as well 
+
+    BUG TO ADDRESS:
+        somehow the logged in user is active in the future 60 minutes from now
+        theres an hour offset from server time to angulars time somehow
+
+    The FIX for now convert the time to UTC istead:
+        ensure date is saved in utc: user.LastActive = DateTime.Now.ToUniversalTime();
+        <p>{{member.lastActive + 'Z' | timeago}}</p>
+
+    adding back the caching:  
+        need to store the qury with pagination now:
+            create a key from the userParams so that can be used a a keey with the query results to ensure that it can be retireved later if needed:
+        store that key in a map now  and retrieve it upon get members if available
+            console.log("query key : ",Object.values(userParams).join('-'))
+            const response = this.memberCache.get(Object.values(userParams).join('-'))
+            if(response) return of(response);
+        set store the value if not there:
+            return this.getPaginatedResults<Member[]>(this.baseUrl + 'users',params).pipe(
+                map(response => {
+                    this.memberCache.set(queryKey, response)
+                    return response
+                })
+            );

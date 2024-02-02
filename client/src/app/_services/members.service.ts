@@ -12,9 +12,15 @@ import {UserParams} from "../_models/userParams";
 export class MembersService {
   baseUrl = environment.apiUrl
   members : Member[] = [];
+  memberCache = new Map()
   constructor(private http: HttpClient) { }
 
   getMembers(userParams : UserParams){
+    let queryKey = Object.values(userParams).join('-')
+    console.log("query key : ",queryKey)
+    const response = this.memberCache.get(queryKey)
+    if(response) return of(response);
+
     let params = this.getPaginationHeaders(userParams.pageNumber, userParams.pageSize);
     console.log("Getting members form params: ", userParams)
     params = params.append('minAge', userParams.minAge)
@@ -22,8 +28,14 @@ export class MembersService {
     params = params.append('gender', userParams.gender)
     params = params.append('orderBy', userParams.orderBy)
 
+    let results = this.getPaginatedResults<Member[]>(this.baseUrl + 'users',params);
 
-    return this.getPaginatedResults<Member[]>(this.baseUrl + 'users',params);
+    return this.getPaginatedResults<Member[]>(this.baseUrl + 'users',params).pipe(
+      map(response => {
+        this.memberCache.set(queryKey, response)
+        return response
+      })
+    );
     //if(this.members.length > 0) return of(this.members)
     //return this.http.get<Member[]>(this.baseUrl + 'users').pipe(
       //disabled caching for testing purposes
