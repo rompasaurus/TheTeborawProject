@@ -4300,11 +4300,69 @@ February 2 2024:
                         
                     }
 
-        making the last active update more effecient 
+        making the last active update more effecient add the user id to claims priniciple
             when looking at the log to see the last active updatem theres a hell of a query going on just to retrieve the user and then update 
                 GetUserByUsernameAsync is a heavy query that includes photos 
                 switch to get user by id without includes statement
                 however the user claims principal only currently has the username need to update the claims to contain the pok value of the :
 
             update the token service to inclued the unique id of the user: 
-                
+                var claims = new List<Claim>()
+                    {
+                        new Claim(JwtRegisteredClaimNames.NameId, user.Id.ToString()),
+                        new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
+                    };
+                going to retain the usernam as the uniquename now instead and the name id is the pk id values
+            
+            adjust claims principle extension for this new value ClaimsPrincipalExtensions:
+                public static string GetUserId(this ClaimsPrincipal user)
+                {
+                    return user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                }
+            the returned token should contain the claims princ for userid now:
+                verify via https://jwt.ms/
+                {
+                    "alg": "HS512",
+                    "typ": "JWT"
+                }.{
+                    "nameid": "1",
+                    "unique_name": "lisa",
+                    "nbf": 1706872575,
+                    "exp": 1707477375,
+                    "iat": 1706872575
+                }.[Signature]
+
+            update the LogUserActivity on action to use the user id:
+                var userId = resultContext.HttpContext.User.GetUserId();
+                var user = await repo.GetUserByIdAsync(int.Parse(userId));
+
+        Apply the sorting on the client side:
+            slap in a ngx-bootstrap radio options :
+
+            add the buttonsModule to shared modules:
+                import and export ButtonsModule.forRoot(),
+
+            Apply the button to memberslistcomponent:
+                    <div class="col">
+                        <div class="btn-group float-end">
+                            <button
+                            type="button"
+                            class="btn btn-primary"
+                            name="orderBy"
+                            [(ngModel)]="userParams.orderBy"
+                            btnRadio="lastActive"
+                            (click)="loadMembers()">Last Active </button>
+                            <button
+                            type="button"
+                            class="btn btn-primary"
+                            name="orderBy"
+                            [(ngModel)]="userParams.orderBy"
+                            btnRadio="created"
+                            (click)="loadMembers()">Newest Members</button>
+                        </div>
+                    </div>
+            Need to alos update the member service to pass in the orderby params
+                params = params.append('orderBy', userParams.orderBy)
+
+
+    

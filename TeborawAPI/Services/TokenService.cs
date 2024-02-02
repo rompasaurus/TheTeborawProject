@@ -20,8 +20,8 @@ public class TokenService: ITokenService
         // Add the users claimset, need to atleast have a username or id identifier further claims will be added later once funcitionailty requiring it is established
         var claims = new List<Claim>()
         {
-            new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
-            new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
+            new Claim(JwtRegisteredClaimNames.NameId, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
         };
         //Establish the highest sha 512 ecryption key generation for token signature 
         var credentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
