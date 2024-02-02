@@ -9,4 +9,26 @@ public class DataContext : DbContext
     {
     }
     public DbSet<AppUser> Users { get; set; }
+    public DbSet<UserLike> Likes { get; set; }
+
+    //this manually create the many to manny relations with the userlike table and estblish the delete cascade mechanism
+    //its possible ef can handle this by default but you have more control this way
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+        builder.Entity<UserLike>()
+            .HasKey(k => new { k.SourceUserId, k.TargetUserId });
+
+        builder.Entity<UserLike>()
+            .HasOne(s => s.SourceUser)
+            .WithMany(l => l.LikedUsers)
+            .HasForeignKey(s => s.SourceUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<UserLike>()
+            .HasOne(s => s.TargetUser)
+            .WithMany(l => l.LikeByUsers)
+            .HasForeignKey(s => s.TargetUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
 }

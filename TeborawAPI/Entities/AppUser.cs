@@ -22,9 +22,7 @@ public class AppUser
     public string? Interests { get; set; } 
     public string? LookingFor { get; set; }
     public List<Photo> Photos { get; set; } = new();
-    //
-    // public int getAge()
-    // {
-    //     return DateOfBirth.CalculateAge();
-    // }
+
+    public List<UserLike> LikeByUsers { get; set; }
+    public List<UserLike> LikedUsers { get; set; }
 }
