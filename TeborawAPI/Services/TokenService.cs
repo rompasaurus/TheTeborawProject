@@ -21,6 +21,7 @@ public class TokenService: ITokenService
         var claims = new List<Claim>()
         {
             new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
+            new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
         };
         //Establish the highest sha 512 ecryption key generation for token signature 
         var credentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);

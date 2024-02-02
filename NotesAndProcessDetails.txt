@@ -4249,3 +4249,62 @@ February 2 2024
                         </option>
                 </select>
             </div>
+
+February 2 2024:
+    More sorting optionsm, by last active:
+        UserParams:
+            Add order by prop:
+                public string OrderBy { get; set; } = "lastActive";
+            update the userRepository GetMembersAsync:
+                query = userParams.OrderBy switch
+                    {
+                        "created" => query.OrderByDescending(u => u.Created),
+                        _ => query.OrderByDescending(u => u.LastActive)
+                    };
+
+    Last active is not being update upon login:
+        create action filter to update the last active upon user interaction on the site:
+            Create a helper action filter service > logUserActivity.cs :
+                //This helper will intercept specified action or http request and apply a log entry to the user how initiated it
+                public class LogUserActivity: IAsyncActionFilter
+                {
+                    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+                    {
+                        //this waits until the api has completed it task then apply a log
+                        var resultContext = await next();
+                        
+                        //verify the user logged in and is authenticated
+                        if(!resultContext.HttpContext.User.Identity.IsAuthenticated) return;
+
+                        var username = resultContext.HttpContext.User.GetUserName();
+
+                        var repo = resultContext.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+
+                        var user = await repo.GetUserByUsernameAsync(username);
+                        user.LastActive = DateTime.Now;
+                        await repo.SaveALlAsync();
+                    }
+                }
+            add the service to the program.cs start via ApplicationServiceExtensions.cs:
+                services.AddScoped<LogUserActivity>();
+            Apply the action filter to the controller:
+                in this case apply is to the base controller to ensure all routes log user activity
+                although this seems excessive
+
+                BaseAPIController.cs:
+                    [ServiceFilter(typeof(LogUserActivity))]
+                    [ApiController]
+                    [Route("api/[controller]")]
+                    public class BaseAPIController: ControllerBase
+                    {
+                        
+                    }
+
+        making the last active update more effecient 
+            when looking at the log to see the last active updatem theres a hell of a query going on just to retrieve the user and then update 
+                GetUserByUsernameAsync is a heavy query that includes photos 
+                switch to get user by id without includes statement
+                however the user claims principal only currently has the username need to update the claims to contain the pok value of the :
+
+            update the token service to inclued the unique id of the user: 
+                
