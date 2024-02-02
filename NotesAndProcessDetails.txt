@@ -4613,3 +4613,117 @@ February 2 2024:
 
                     }
                 }
+
+        Create the controller enpoint for likeControler.cs:
+            public class LikesController : BaseAPIController
+            {
+                private readonly IUserRepository _userRepository;
+                private readonly ILikesRepository _likesRepository;
+
+                public LikesController(IUserRepository userRepository, ILikesRepository likesRepository)
+                {
+                    _userRepository = userRepository;
+                    _likesRepository = likesRepository;
+                }
+
+                
+                //the logged in/ source user is applying a like to liked user 
+                [HttpPost("{username}")]
+                public async Task<ActionResult> AddLike(string username)
+                {
+                    
+                    var sourceUserId = int.Parse(User.GetUserId());
+                    var likedTargetUser = await _userRepository.GetUserByUsernameAsync(username);
+                    var sourceUser = await _likesRepository.GerUserWithLikes(sourceUserId);
+                    
+                    if(likedTargetUser == null) return NotFound();
+                    if(sourceUser.UserName == username) return BadRequest("You Cannot Like yourself");
+
+                    //check the liked user db and ensure like from source user has not been applied to target user
+                    var userLike = await _likesRepository.GetUserLike(sourceUserId, likedTargetUser.Id);
+                    if(userLike != null) return BadRequest("You Already Like this user");
+
+                    userLike = new UserLike
+                    {
+                        SourceUserId = sourceUserId,
+                        TargetUserId = likedTargetUser.Id
+                    };
+
+                    sourceUser.LikedUsers.Add(userLike);
+
+                    if (await _userRepository.SaveALlAsync()) return Ok();
+
+                    return BadRequest("Failed to like user ");
+
+                }
+            }
+
+
+    Get the client wired up to the likes :
+        memberService:
+            addLike(username : string){
+                return this.http.post(this.baseUrl + 'likes/' + username, {})
+            }
+
+            getLikes(predicate: string){
+                return this.http.get<Member[]>(this.baseUrl + 'likes?predicate=' + predicate )
+            }
+
+    Add like call to member card compoennt:
+        constructor(private memberService : MembersService, private toastr: ToastrService) {
+        }
+        addLike(member: Member){
+            this.memberService.addLike(member.userName).subscribe({
+            next: () => this.toastr.success('You have liked ' + member.knownAs)
+            })
+        }
+    attach click event to hear icon in html:
+        <button (click)="addLike(member)" class="btn btn-primary">
+
+
+    Create component to list liked and likeby user :
+        ListsComponent:
+            export class ListsComponent implements OnInit{
+                members: Member[] | undefined
+                predicate = 'liked'
+
+                constructor(private memberService: MembersService) {
+                }
+                ngOnInit(): void {
+                    throw new Error('Method not implemented.');
+                }
+
+                loadLikes(){
+                this.memberService.getLikes(this.predicate).subscribe({
+                    next: response => {
+                    this.members = response
+                    }
+                })
+                }
+
+        ListsComponent Html:
+            <div class="text-center mt-3">
+                <h2>{{predicate === 'liked' ? 'Members I Like' : 'Members who like me'}}</h2>
+            </div>
+
+            <div class="container mt-3">
+            <div class="d-flex">
+                <div class="btn-group" name="predicate">
+                <button
+                    class="btn btn-primary"
+                    btnRadio="liked"
+                    [(ngModel)]="predicate"
+                    (click)="loadLikes()"> Members I like </button>
+                <button
+                    class="btn btn-primary"
+                    btnRadio="likedBy"
+                    [(ngModel)]="predicate"
+                    (click)="loadLikes()"> Members Who Like Me </button>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-2" *ngFor="let member of members">
+                <app-member-card [member]="member"></app-member-card>
+                </div>
+            </div>
+            </div>
