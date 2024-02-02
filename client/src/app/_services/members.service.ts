@@ -2,9 +2,11 @@ import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import { Member } from '../_models/member';
-import {map, of} from "rxjs";
+import {map, of, take} from "rxjs";
 import {PaginatedResult} from "../_models/pagination";
 import {UserParams} from "../_models/userParams";
+import {AccountService} from "./account.service";
+import {User} from "../_models/user";
 
 @Injectable({
   providedIn: 'root'
@@ -13,8 +15,36 @@ export class MembersService {
   baseUrl = environment.apiUrl
   members : Member[] = [];
   memberCache = new Map()
-  constructor(private http: HttpClient) { }
+  user: User | undefined
+  userParams : UserParams | undefined
 
+  //its oke to inject services into other service=s just make sure the other service doesnt inject this service too!
+  constructor(private http: HttpClient, private accountService : AccountService) {
+    this.accountService.currentUser$.pipe(take(1)).subscribe({
+      next: user=>{
+        if(user){
+          this.userParams = new UserParams(user)
+          this.user = user
+        }
+      }
+    })
+  }
+
+  getUserParams(){
+    return this.userParams
+  }
+
+  setUserParams(params : UserParams){
+    this.userParams = this.userParams
+  }
+
+  resetUserParams(){
+    if(this.user){
+      this.userParams = new UserParams(this.user)
+      return this.userParams
+    }
+    return
+  }
   getMembers(userParams : UserParams){
     let queryKey = Object.values(userParams).join('-')
     console.log("query key : ",queryKey)
@@ -54,7 +84,7 @@ export class MembersService {
     const member = [...this.memberCache.values()]
       .reduce((arr,element) => arr.concat(element.result), [])
       .find((member: Member) => member.userName === username)
-    
+
     if(member) return of(member)
 
     return this.http.get<Member>(this.baseUrl + 'users/' + username);
