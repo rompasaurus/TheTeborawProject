@@ -4405,3 +4405,19 @@ February 2 2024:
                     return response
                 })
             );
+
+    need to store the individual user because it was pulled with the member service:
+        need to be able to flatten out the members cache map arrays into one array using reduce
+            const members = [...this.memberCache.values()]
+                .reduce((arr,element) => arr.concat(element.result), [])
+
+            members takes the spread arrays od the member cache then pull every element into one array
+
+            just need to then find the first user to get the member profile:
+                const member = [...this.memberCache.values()]
+                    .reduce((arr,element) => arr.concat(element.result), [])
+                    .find((member: Member) => member.userName === username)
+                if(member) return of(member)
+
+    Remember the userParams query when coming back to member list:
+        

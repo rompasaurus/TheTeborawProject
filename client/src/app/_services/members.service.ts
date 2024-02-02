@@ -48,33 +48,15 @@ export class MembersService {
     //return this.http.get<Member[]>(this.baseUrl + 'users', this.getHttpOptions())
   }
 
-  private getPaginatedResults<T>(url: string, params: HttpParams) {
-    const paginatedResult : PaginatedResult<T> = new PaginatedResult<T>
-    return this.http.get<T>(url, {observe: 'response', params}).pipe(
-      map(response => {
-        if (response.body) {
-          paginatedResult.result = response.body
-        }
-        const pagination = response.headers.get('Pagination')
-        if (pagination) {
-          paginatedResult.pagination = JSON.parse(pagination)
-        }
-        return paginatedResult
-      })
-    )
-  }
-
-  private getPaginationHeaders(pageNumber:number, pageSize:number) {
-    let params = new HttpParams()
-    params = params.append('pageNumber', pageNumber)
-    params = params.append('pageSize', pageSize)
-    return params;
-  }
 
 //member deets are conveniently housed in the member list, so if that was already loaded you can get it from there without phoning home
   getMember(username:string){
-    const member = this.members.find(x => x.userName === username)
+    const member = [...this.memberCache.values()]
+      .reduce((arr,element) => arr.concat(element.result), [])
+      .find((member: Member) => member.userName === username)
+    
     if(member) return of(member)
+
     return this.http.get<Member>(this.baseUrl + 'users/' + username);
     //not needed any more now that jwt interceptor is in place
     //return this.http.get<Member>(this.baseUrl + 'users/' + username, this.getHttpOptions());
@@ -99,6 +81,28 @@ export class MembersService {
 
   deletePhoto(photoId:number){
     return this.http.delete(this.baseUrl + 'users/delete-photo/' + photoId)
+  }
+  private getPaginatedResults<T>(url: string, params: HttpParams) {
+    const paginatedResult : PaginatedResult<T> = new PaginatedResult<T>
+    return this.http.get<T>(url, {observe: 'response', params}).pipe(
+      map(response => {
+        if (response.body) {
+          paginatedResult.result = response.body
+        }
+        const pagination = response.headers.get('Pagination')
+        if (pagination) {
+          paginatedResult.pagination = JSON.parse(pagination)
+        }
+        return paginatedResult
+      })
+    )
+  }
+
+  private getPaginationHeaders(pageNumber:number, pageSize:number) {
+    let params = new HttpParams()
+    params = params.append('pageNumber', pageNumber)
+    params = params.append('pageSize', pageSize)
+    return params;
   }
 
   //need a way to pass authentication, the wrong way first then the proper way later
