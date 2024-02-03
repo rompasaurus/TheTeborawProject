@@ -1,14 +1,17 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {Message} from "../../_models/message";
 import {MessagesService} from "../../_services/messages.service";
-import {NgForOf} from "@angular/common";
+import {NgForOf, NgIf} from "@angular/common";
+import {TimeagoModule} from "ngx-timeago";
 
 @Component({
   selector: 'app-member-messages',
   templateUrl: './member-messages.component.html',
   standalone: true,
   imports: [
-    NgForOf
+    NgForOf,
+    NgIf,
+    TimeagoModule
   ],
   styleUrl: './member-messages.component.css'
 })
@@ -29,4 +32,6 @@ export class MemberMessagesComponent implements OnInit{
       })
     }
   }
+
+  protected readonly Date = Date;
 }

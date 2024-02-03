@@ -5328,6 +5328,94 @@ February 3 2024:
         Add it to the member profile page and you need to make the component standalone bcause of the ngx gallery to get it to work fully:
         need to do an ass load of imports
 
+        MemberMessagesComponent:
+            <div class="card">
+                <div class="card-body">
+                    <div *ngIf="messages.length === 0">
+                    No messages yet.... say hi by using the message box below
+                    </div>
+
+                    <ul *ngIf="messages.length>0"  class="chat" >
+                    <li *ngFor="let message of messages">
+                        <div>
+                        <span class="chat-img float-end">
+                            <img src="{{message.senderPhotoUrl || './assets/user.png'}}"
+                                alt="image of user"
+                                class="rounded-circle">
+                        </span>
+                        <div class="chat-body">
+                            <div class="header">
+                            <small class="text-muted">
+                                <span class="fa fa-clock-o">{{message.messageSent | timeago}}</span>
+                                <span class="text-danger" *ngIf="!message.dateRead && message.senderUsername !== username">
+                                (unread)
+                                </span>
+                                <span class="text-success" *ngIf="message.dateRead && message.senderUsername !== username">
+                                (read {{message.dateRead | timeago}})
+                                </span>
+                            </small>
+                            </div>
+                            <p>{{message.content}}</p>
+                        </div>
+                        </div>
+
+                    </li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <form>
+                    <div class="input-group">
+                        <input type="text" class="form-control input-sm" placeholder="Send a private Message">
+                        <div class="input-group-append">
+                        <button class="btn btn-primary">Send</button>
+                        </div>
+                    </div>
+                    </form>
+                </div>
+            </div>
+            export class MemberMessagesComponent implements OnInit{
+                @Input() username? : string
+                messages :Message[] = []
+
+                constructor(private messageService: MessagesService) {
+                }
+                ngOnInit(): void {
+                    this.loadMessages()
+                }
+
+                loadMessages(){
+                    if(this.username) {
+                    this.messageService.getMessageThreads(this.username).subscribe({
+                        next: messages => this.messages = messages
+                    })
+                    }
+                }
+
+                protected readonly Date = Date;
+                }
+
+            css:
+                .card {
+                border: none;
+                }
+
+                .chat{
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                }
+
+                .chat li{
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+                border: 1px dotted blue;
+                }
 
 
+                .rounded-circle{
+                max-height: 50px;
+}
+
+
+ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
