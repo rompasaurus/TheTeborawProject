@@ -48,7 +48,7 @@ public class UserRepository : IUserRepository
             .SingleOrDefaultAsync(x => x.UserName == username);
     }
 
-    public async Task<PageList<MemberDTO>> GetMembersAsync(UserParams userParams)
+    public async Task<PagedList<MemberDTO>> GetMembersAsync(UserParams userParams)
     {
         var query = _context.Users.AsQueryable();
 
@@ -66,7 +66,7 @@ public class UserRepository : IUserRepository
             _ => query.OrderByDescending(u => u.LastActive)
         };
         
-        return await PageList<MemberDTO>.CreateAsync(
+        return await PagedList<MemberDTO>.CreateAsync(
             query.AsNoTracking().ProjectTo<MemberDTO>(_mapper.ConfigurationProvider),
             userParams.PageNumber, 
             userParams.PageSize);

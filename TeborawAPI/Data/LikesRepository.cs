@@ -27,7 +27,7 @@ public class LikesRepository : ILikesRepository
             .FirstOrDefaultAsync(x => x.Id == userID);
     }
 
-    public async Task<PageList<LikeDTO>> GetUserLikes(LikesParams likesParams)
+    public async Task<PagedList<LikeDTO>> GetUserLikes(LikesParams likesParams)
     {
         //remmember querables dont get executed
         var users = _context.Users.OrderBy(u => u.UserName).AsQueryable();
@@ -55,7 +55,7 @@ public class LikesRepository : ILikesRepository
             Id = user.Id
         });
 
-        return await PageList<LikeDTO>.CreateAsync(likedUsers, likesParams.PageNumber, likesParams.PageSize);
+        return await PagedList<LikeDTO>.CreateAsync(likedUsers, likesParams.PageNumber, likesParams.PageSize);
     }
     
 }

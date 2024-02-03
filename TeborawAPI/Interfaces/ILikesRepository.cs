@@ -8,5 +8,5 @@ public interface ILikesRepository
 {
     Task<UserLike> GetUserLike(int sourceUserId, int targetUserId);
     Task<AppUser> GerUserWithLikes(int userID);
-    Task<PageList<LikeDTO>> GetUserLikes(LikesParams likesParams);
+    Task<PagedList<LikeDTO>> GetUserLikes(LikesParams likesParams);
 }

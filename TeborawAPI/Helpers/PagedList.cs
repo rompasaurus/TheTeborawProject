@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace TeborawAPI.Helpers;
 
-public class PageList<T> : List<T>
+public class PagedList<T> : List<T>
 {
-    public PageList(IEnumerable<T> items, int count, int pageNumber, int pageSize)
+    public PagedList(IEnumerable<T> items, int count, int pageNumber, int pageSize)
     {
         CurrentPage = pageNumber;
         TotalPages = (int) Math.Ceiling(count / (double) pageSize);
@@ -22,11 +22,11 @@ public class PageList<T> : List<T>
     //WIld shit is happening here, static method calls the db to determine how many entires exist in a given 
     // db iqueryable source context then selects the data from the context base on the page number and size passed in
     // returns a new instance of this class with the results. and stores the params passed in 
-    public static async Task<PageList<T>> CreateAsync(IQueryable<T> source,
+    public static async Task<PagedList<T>> CreateAsync(IQueryable<T> source,
         int pageNumber, int pageSize)
     {
         var count = await source.CountAsync();
         var items = await source.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-        return new PageList<T>(items, count, pageNumber, pageSize);
+        return new PagedList<T>(items, count, pageNumber, pageSize);
     }
 }

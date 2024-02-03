@@ -50,7 +50,7 @@ public class LikesController : BaseAPIController
     }
 
     [HttpGet]
-    public async Task<ActionResult<PageList<LikeDTO>>> GetUserLikes([FromQuery] LikesParams likesParams)
+    public async Task<ActionResult<PagedList<LikeDTO>>> GetUserLikes([FromQuery] LikesParams likesParams)
     {
         likesParams.UserId = User.GetUserId();
         var users = await _likesRepository.GetUserLikes(likesParams);

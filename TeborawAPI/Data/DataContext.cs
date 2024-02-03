@@ -11,7 +11,7 @@ public class DataContext : DbContext
     public DbSet<AppUser> Users { get; set; }
     public DbSet<UserLike> Likes { get; set; }
     
-    public DbSet<Messages> Messages { get; set; }
+    public DbSet<Message> Messages { get; set; }
 
     //this manually create the many to manny relations with the userlike table and estblish the delete cascade mechanism
     //its possible ef can handle this by default but you have more control this way
@@ -33,13 +33,13 @@ public class DataContext : DbContext
             .HasForeignKey(s => s.TargetUserId)
             .OnDelete(DeleteBehavior.Cascade);
         
-        builder.Entity<Messages>()
+        builder.Entity<Message>()
             .HasOne(s => s.Recipient)
             .WithMany(l => l.MessagesRecieved)
             //.HasForeignKey(s => s.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
         
-        builder.Entity<Messages>()
+        builder.Entity<Message>()
             .HasOne(s => s.Sender)
             .WithMany(l => l.MessagesSent)
             //.HasForeignKey(s => s.SenderId)
