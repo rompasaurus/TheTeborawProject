@@ -4827,5 +4827,52 @@ February 2 2024:
 
                 .html:
                     steal the member list pagination and alter slightly 
-                    
-                    
+
+February 3 2024:
+    Adding Messeging:
+        More many to many relationships 
+        create inbox and outbox and unread messages 
+        using query params in angular 
+        using route resolvers 
+    
+    Setup Entities for messaging in the API:
+        Setup message.cs in entities folder of the api:
+            public class Message
+            {
+                public int Id { get; set; }
+                public int SenderId { get; set; }
+                public string SenderUsername { get; set; }
+                public AppUser Sender { get; set; }
+                public int RecipientId { get; set; }
+                public string RecipientUsername { get; set; }
+                public AppUser Recipient { get; set; }
+                public string Content { get; set; }
+                public DateTime DateRead { get; set; }
+                public DateTime MessageSent { get; set; } = DateTime.UtcNow;
+                public bool SenderDeleted { get; set; }
+                public bool RecipientDeleted { get; set; }
+
+            }
+        Add the messeges as a prop/fk to AppUser:
+            public List<Message> MessagesSent { get; set; }
+            public List<Message> MessagesRecieved { get; set; }
+        notes these props of lists dont get added as acolumn to appuser, these just register that the object table types link to appuser via fk relationship and can be include in ef query calls without the need of fluent declaratios or weird jon statements
+
+        because this is a manay to many you could let ef migration create the config but gonna do it manually instead
+
+    Setup the Datacontext and relationship in fluentApi DataCOntext.cs:
+        builder.Entity<Messages>()
+            .HasOne(s => s.Recipient)
+            .WithMany(l => l.MessagesRecieved)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<Messages>()
+            .HasOne(s => s.Sender)
+            .WithMany(l => l.MessagesRecieved)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        add and apply dotnet migrations:
+            dotnet ef migrations add messagesEntity
+
+            
+NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
