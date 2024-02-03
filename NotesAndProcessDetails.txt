@@ -5414,7 +5414,42 @@ February 3 2024:
 
                 .rounded-circle{
                 max-height: 50px;
-}
+                }
+
+    Activating the Messages tab:
+        also the messages get pull on the member page even if the tab isnt selected:
+            because the member seets is a standalone component you need to use a template reference variable to can access to the component and set when you want it to load:   
+            MemberDetailComponent html:
+                <tabset class="member-tabset" #memberTabs>
+            MemberDetailComponent ts:
+                @ViewChild('memberTabs') memberTabs?: TabsetComponent
+                activeTab?: TabDirective
+                  onTabActivated(data: TabDirective){
+                    this.activeTab = data
+                    if(this.activeTab.heading === 'Messages'){
+                    this.loadMessages()
+                    }
+                }
+
+                loadMessages(){
+                    if(this.member) {
+                    this.messageService.getMessageThreads(this.member.userName).subscribe({
+                        next: messages => this.messages = messages
+                    })
+                    }
+                }
+
+
+            apply tab change listner to html element:
+                <tab heading="Messages" (selectTab)="onTabActivated($event)">
+
+
+            the MemberMessagesComponent should be bare boned now with just :
+            export class MemberMessagesComponent implements OnInit{
+                @Input() messages:Message[] = []
+            messages are brought in by the parent just need to declare the comp as 
+                <app-member-messages [messages]="messages"></app-member-messages>
+
 
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
