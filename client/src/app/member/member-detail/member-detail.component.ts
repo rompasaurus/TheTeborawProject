@@ -6,6 +6,7 @@ import {DatePipe, NgIf} from "@angular/common";
 import {TabsModule} from "ngx-bootstrap/tabs";
 import {GalleryItem, GalleryModule, ImageItem} from "ng-gallery";
 import {TimeagoModule} from "ngx-timeago";
+import {MemberMessagesComponent} from "../member-messages/member-messages.component";
 
 @Component({
   selector: 'app-member-detail',
@@ -16,7 +17,8 @@ import {TimeagoModule} from "ngx-timeago";
     TabsModule,
     GalleryModule,
     DatePipe,
-    TimeagoModule
+    TimeagoModule,
+    MemberMessagesComponent
   ],
   styleUrl: './member-detail.component.css'
 })
@@ -24,7 +26,7 @@ export class MemberDetailComponent implements OnInit {
   member: Member | undefined;
   images: GalleryItem[] = []
 
-  //Route allows access to the the username passed into the routers upon loading this component
+  //Route allows access to the username passed into the routers upon loading this component
   constructor(private memberService: MembersService, private route: ActivatedRoute){}
 
   ngOnInit(): void {
