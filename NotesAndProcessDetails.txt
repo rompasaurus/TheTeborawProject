@@ -5451,6 +5451,59 @@ February 3 2024:
                 <app-member-messages [messages]="messages"></app-member-messages>
 
 
+        MemberDetailComponent:
+            add a selectTab function overriding ts checks in the process
+                selectTab(heading : string){
+                    if(this.memberTabs){
+                    //the ! tells ts to stop checking cuz we're going rouge and shit about to get wierd
+                    this.memberTabs.tabs.find(x => x.heading === heading)!.active = true
+                    }
+                }
+            add a click listener to engage this tab and function :
+                <button (click)="selectTab('Messages')" class="btn btn-success">Message</button>
+
+        Now to do it outside of the component by passing in a query string:
+            Member-card.component.html use the routerlink:
+                <button
+                  class="btn btn-primary"
+                  routerLink="member/{{member.userName}}"
+                  [queryParams]="{tab: 'Messages'}"
+                >
+        this will slap url/member/username?tab=Messages ex: https://localhost:4200/members/member/todd?tab=Messages
+        make the same change to the MessagesComponent
+                <tr *ngFor="let message of messages"
+                    routerLink="{{container === 'Outbox'
+                    ? '/members/' + message.recipientUsername
+                    : '/members/' + message.senderUsername}}"
+                    [queryParams]="{tab: 'Messages'}"
+                >
+        now to update the route in the MemberDetailComponent:
+            gotta use a route resolver to allow the child component to be access and tab selected as the oniti doesnt have initialized child components because the member value has not loaded yet 
+            this is solved by loading the member prior to the component in the first place :
+            
+            ng cli create a resolver:
+                ng g r _resolvers/member-detail:
+                    export const memberDetailResolver: ResolveFn<Member> = (route, state) => {
+                        const memberService = inject(MembersService)
+                        return memberService.getMember(route.paramMap.get('username')!)
+                    };
+
+            Update the route config AppRoutingModule:
+                {path: 'members/:username', component: MemberDetailComponent, resolve: {member: memberDetailResolver}},
+
+            boom badabing shti just works now how neat
+
+            but also in the MemberDetailComponent you can access the memeber  instead of loading it as it was passed in via the resolver
+              ngOnInit(): void {
+                this.route.data.subscribe({
+                next: data => this.member = data['member']
+                })
+
+        Still need to remove the condition in the temlate of need to remove the ngIf and member no longer needs an undefined declaration
+            member: Member = {} as Member
+
+        also the tabs view childs need to be declared as static to ensure load prior to initL:
+          @ViewChild('memberTabs', {static: true}) memberTabs?: TabsetComponent
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP

@@ -25,9 +25,9 @@ import {Message} from "../../_models/message";
   styleUrl: './member-detail.component.css'
 })
 export class MemberDetailComponent implements OnInit {
-  @ViewChild('memberTabs') memberTabs?: TabsetComponent
+  @ViewChild('memberTabs', {static: true}) memberTabs?: TabsetComponent
   activeTab?: TabDirective
-  member: Member | undefined;
+  member: Member = {} as Member
   images: GalleryItem[] = []
   messages: Message[] = []
 
@@ -35,7 +35,16 @@ export class MemberDetailComponent implements OnInit {
   constructor(private memberService: MembersService, private route: ActivatedRoute, private messageService: MessagesService){}
 
   ngOnInit(): void {
-    this.loadMember()
+    this.route.data.subscribe({
+      next: data => this.member = data['member']
+    })
+    //WARNING YOU DONT HAVE ACCESS TO THE MEMBER TABS ON INTIALIZE OR ANY CHILD COMPONENT
+    this.route.queryParams.subscribe({
+      next: params =>{
+        params['tab'] && this.selectTab(params['tab'])
+      }
+    })
+    this.getImages()
   }
 
   onTabActivated(data: TabDirective){
@@ -45,22 +54,19 @@ export class MemberDetailComponent implements OnInit {
     }
   }
 
+  selectTab(heading : string){
+    if(this.memberTabs){
+      //the ! tells ts to stop checking cuz we're going rouge and shit about to get wierd
+      this.memberTabs.tabs.find(x => x.heading === heading)!.active = true
+    }
+  }
+
   loadMessages(){
     if(this.member) {
       this.messageService.getMessageThreads(this.member.userName).subscribe({
         next: messages => this.messages = messages
       })
     }
-  }
-  loadMember(){
-    var username = this.route.snapshot.paramMap.get('username')
-    if(!username) return;
-    this.memberService.getMember(username).subscribe({
-      next: member => {
-        this.member = member
-        this.getImages();
-      }
-    })
   }
   getImages(){
     if(!this.member) return;
