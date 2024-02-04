@@ -3868,7 +3868,7 @@ January 31, 2024:
                             this.accountService.setCurrentUser(this.user)
                         }
 
-February 2 2024
+February 1 2024
     Paging Sorting and filtering:
         Goals:
             implement paging sorting and filtering 
@@ -5505,5 +5505,56 @@ February 3 2024:
         also the tabs view childs need to be declared as static to ensure load prior to initL:
           @ViewChild('memberTabs', {static: true}) memberTabs?: TabsetComponent
 
+    Wire up the send message in the message tab:
+        messageService:
+            sendMessage(username:string, content:string){
+                return this.http.post<Message>(this.baseUrl + 'messages',
+                {recipientUsername: username, content})
+            }
+
+    MemberMessagesComponent:
+      sendMessage(){
+            if(!this.username){
+            this.messagesService.sendMessage(this.username, this.messageContent).subscribe({
+                next: message => this.messages.push(message)
+            })
+            }
+        }
+
+    MemberMessagesComponent needs the form wired into the sendMessage:
+        make the form an ngForm module by useing the template reference variable #messageForm
+            <form #messageForm = "ngForm" (ngSubmit)="sendMessage()" autocomplete="off">
+                <div class="input-group">
+                    <input
+                        type="messageConten"
+                        required
+                        [(ngModel)]="messageContent"
+                        lass="form-control input-sm"
+                        placeholder="Send a private Message"
+                    >
+                    <div class="input-group-append">
+                    <button [disabled]="!messageForm.valid" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </form>
+
+    MemberMessagesComponent:
+        add the form as a viewchild 
+        @ViewChild('messageForm') messageForm? : NgForm
+        add form reset too   
+            sendMessage(){
+                if(!this.username) return
+                this.messagesService.sendMessage(this.username, this.messageContent).subscribe({
+                next: message => {
+                    this.messages.push(message)
+                    this.messageForm?.reset()
+                }
+                })
+            }
+
+    need to resort the users message when they come in:
+        orderBy instead of OrderByDescending
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
+

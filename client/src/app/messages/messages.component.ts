@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {Message} from "../_models/message";
 import {Pagination} from "../_models/pagination";
 import {MessagesService} from "../_services/messages.service";
+import {NgForOf, NgIf} from "@angular/common";
 
 @Component({
   selector: 'app-messages',
