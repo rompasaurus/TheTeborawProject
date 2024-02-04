@@ -5555,6 +5555,8 @@ February 3 2024:
     need to resort the users message when they come in:
         orderBy instead of OrderByDescending
 
+ February 4 2024
+ 
     Fixing photo weirdness:
         when swaping to from inbox to outbox the phots are still visible and you can see them switch over
         The fix:
@@ -6195,12 +6197,29 @@ February 3 2024:
             }
 
     Get the submit wired in :
-        
+        this is done by subscribing to the modal close event :
+        openRolesModal(user:User){
+            const config = {
+            class: 'modal-dialog-centered',
+            initialState: {
+                username: user.username,
+                availableRoles: this.availableRoles,
+                selectedRoles: [...user.roles]
+            }
+            }
+            this.bsModalRef = this.modalService.show(RolesModalComponent, config)
+            this.bsModalRef.onHide?.subscribe({
+            next: () => {
+                const selectedRoles = this.bsModalRef.content?.selectedRoles
+                if(!this.arrayEqual(selectedRoles!,user.roles)){
+                this.adminService.updateUserRoles(user.username, selectedRoles!).subscribe({
+                    next: roles => user.roles = roles
+                })
+                }
 
-
-
-
-
+            }
+            })
+        }
 
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
