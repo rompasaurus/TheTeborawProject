@@ -1,16 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 using TeborawAPI.Extensions;
 
 namespace TeborawAPI.Entities;
 
-public class AppUser
+public class AppUser : IdentityUser<int>
 {
-    public int Id { get; set; }
-    
-    [Required]
-    public string UserName {get; set;}
-    public Byte[] PasswordHash { get; set; }
-    public Byte[] PasswordSalt { get; set; }
     public DateOnly DateOfBirth { get; set; }
     public string KnownAs { get; set; }
     public DateTime Created { get; set; } = DateTime.UtcNow;
@@ -28,5 +23,7 @@ public class AppUser
 
     public List<Message> MessagesSent { get; set; }
     public List<Message> MessagesRecieved { get; set; }
+
+    public ICollection<AppUserRole> UserRoles { get; set; }
     
 }

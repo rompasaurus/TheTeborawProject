@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Data;
@@ -12,13 +13,13 @@ namespace TeborawAPI.Controllers;
 
 public class AccountController: BaseAPIController
 {
-    private readonly DataContext _context;
+    private readonly UserManager<AppUser> _userManager;
     private readonly ITokenService _tokenService;
     private readonly IMapper _mapper;
 
-    public AccountController(DataContext context, ITokenService tokenService, IMapper mapper)
+    public AccountController(UserManager<AppUser> userManager, ITokenService tokenService, IMapper mapper)
     {
-        _context = context;
+        _userManager = userManager;
         _tokenService = tokenService;
         _mapper = mapper;
     }
@@ -31,13 +32,10 @@ public class AccountController: BaseAPIController
         using var hmac = new HMACSHA512();
         
         var user = _mapper.Map<AppUser>(registerDTO);
-        
-        user.UserName = registerDTO.Username.ToLower();
-        user.PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDTO.Password));
-        user.PasswordSalt = hmac.Key;
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        var result = await _userManager.CreateAsync(user, registerDTO.Password);
+        if (!result.Succeeded) return BadRequest(result.Errors);
+        
         return new UserDTO()
         {
             Username = user.UserName,
@@ -51,18 +49,13 @@ public class AccountController: BaseAPIController
     [HttpPost("login")]
     public async Task<ActionResult<UserDTO>> Login(LoginDTO loginDTO)
     {
-        var user = await _context.Users.Include(p => p.Photos).FirstOrDefaultAsync(u => u.UserName.ToLower() == loginDTO.Username.ToLower());
+        var user = await _userManager.Users.Include(p => p.Photos).FirstOrDefaultAsync(u => u.UserName.ToLower() == loginDTO.Username.ToLower());
         
         if (user == null) return Unauthorized("Invalid Username");
-        //validate password by reversing the hash algo 
-        using var hmac = new HMACSHA512(user.PasswordSalt);
-        //pull the compute hash of user imput pw  
-        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDTO.Password));
 
-        for (int i = 0; i < computedHash.Length; i++)
-        {
-            if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("Invalid password");
-        }
+        var result = await _userManager.CheckPasswordAsync(user, loginDTO.Password);
+        
+        if(!result) return Unauthorized("Invalid Password");
         
         return new UserDTO()
         {
@@ -74,13 +67,9 @@ public class AccountController: BaseAPIController
         };
 
     }
-    // private async Task<AppUser> retrieveUser(string loginDtoUsername)
-    // {
-    //     return await _context.Users.FirstOrDefaultAsync(u => u.UserName == loginDtoUsername);
-    // }
 
     private async Task<bool> UserExists(string userName)
     {
-        return await _context.Users.AnyAsync(x => x.UserName == userName);
+        return await _userManager.Users.AnyAsync(x => x.UserName == userName);
     }
 }

@@ -5636,23 +5636,125 @@ February 3 2024:
                         })
                     }
                     <button class="btn btn-danger"  (click)="deleteMessage(message.id)">Delete</button>
-                    
+
         delete button routes to the user profile need to change to stop the routing :
             MessagesComponent:
                 add another click event 
                     <button class="btn btn-danger"  (click)="$event.stopPropagation()" (click)="deleteMessage(message.id)">Delete</button>
 
 
+    IDENTITY AND ROLE MANAGEMENT:
+        Refactor the code to use ASP .net Identity
+        role management 
+        policy based authorization
+        usermanager 
+        signinmanager 
+        rolemanager
+
+        why:
+            battlehardened written and test by msft 
+            comes with password hasher 
+            full framework for managing members and roles 
+            provides the ef schema to create the need roles
 
 
+    First step exted AppUser from the identityuser class :
+        public class AppUser : IdentityUser<int> (the in establishes integer as the id )
+            add:
+                public ICollection<AppUserRole> UserRoles { get; set; }
+            you can now delete id, username password hash as that in implicitly inherity
 
+    create Idnetity role class in entity inherit from IdentityRole
+        public class AppUserRole : IdentityUserRole<int>
+        {
+            public AppUser User { get; set; }
+            public AppRole Role { get; set; }
+        }
 
+    Create an approle class as well in entities:
+        public class AppRole : IdentityRole<int>
+        {
+            public ICollection<AppUserRole> UserRoles { get; set; }
+        }
 
+    Remove the hmac and salt stuf from the accountcontroller and seed method
 
+    Adjust the DataContext:
+        derive from the IdentityDB
+            nuget install Microsoft.AspNetCore.Identity.EntityFrameworkCore
 
+        public class DataContext : IdentityDbContext
+        
+        no longer need the user dbset as already inherited
 
+        also need to specified each dataset with the int type as the id is of type int
+        public class DataContext : IdentityDbContext<AppUser, AppRole, int, 
+            IdentityUserClaim<int>, AppUserRole, IdentityUserLogin<int>, 
+            IdentityRoleClaim<int>, IdentityUserToken<int>>
+    
 
+        configure builder to dictate the AppUser and Approle relationship
+            App user 1 can have many roles 
+            roles 1 can be assigne to many user
 
+                builder.Entity<AppUser>()
+                    .HasMany(ur => ur.UserRoles)
+                    .WithOne(u => u.User)
+                    .HasForeignKey(ur => ur.UserId)
+                    .IsRequired();
+                
+                builder.Entity<AppRole>()
+                    .HasMany(ur => ur.UserRoles)
+                    .WithOne(u => u.Role)
+                    .HasForeignKey(ur => ur.Role)
+                    .IsRequired();
+
+    Configure Identity via IdentityServiceExtensions:
+        at top:
+            services.AddIdentityCore<AppUser>(opt =>
+            {
+                opt.Password.RequireNonAlphanumeric = false;
+                //opt.User.RequireUniqueEmail;
+            })
+            .AddRoles<AppRole>()
+            .AddRoleManager<RoleManager<AppRole>>()
+            .AddEntityFrameworkStores<DataContext>();
+
+    Create a new migration:
+        dotnet ef migrations add identityImpl
+
+    Update the seed class seed.cs:
+    switch to userManager instead:
+        public static async Task SeedUsers(UserManager<AppUser> userManager)
+        {
+            if (await userManager.Users.AnyAsync())
+            {
+                return;
+            }
+            else
+            {
+                var userData = await File.ReadAllTextAsync("Data/UserSeedData.json");
+                //ignores and still adds lowercase property name 
+                var options = new JsonSerializerOptions{PropertyNameCaseInsensitive = true};
+                var users = JsonSerializer.Deserialize<List<AppUser>>(userData);
+                foreach (var user in users)
+                {
+                    user.UserName = user.UserName.ToLower();
+                    await userManager.CreateAsync(user, "Pas$$w0rd");
+                }
+            }
+        }        
+
+    Update program cs to use the seed class passing in the usermanager:
+        var userManager = services.GetRequiredService<UserManager<AppUser>>();
+        await Seed.SeedUsers(userManager);
+
+    Drop dat db and rerun the application:
+        dotnet ef database drop
+
+    Configure the AccountController for login and regiser:
+        inject the user manager instead of context 
+        UserManager<AppUser> userManager
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP

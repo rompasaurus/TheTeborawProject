@@ -10,8 +10,8 @@
 
 .chat li{
   margin-bottom: 10px;
-  padding-bottom: 10px;
-  border: 1px dotted blue;
+  padding: 10px;
+  border: 5px solid powderblue;
 }
 
 

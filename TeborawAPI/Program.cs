@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Data;
+using TeborawAPI.Entities;
 using TeborawAPI.Extensions;
 using TeborawAPI.Middleware;
 
@@ -39,9 +41,10 @@ var services = scope.ServiceProvider;
 try
 {
     var context = services.GetRequiredService<DataContext>();
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
     //with a freshly dropped db this will rerun all the migration scripts create the db and then run seed
     await context.Database.MigrateAsync();
-    await Seed.SeedUsers(context);
+    await Seed.SeedUsers(userManager);
 }
 catch (Exception ex)
 {
