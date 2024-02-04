@@ -5555,6 +5555,105 @@ February 3 2024:
     need to resort the users message when they come in:
         orderBy instead of OrderByDescending
 
+    Fixing photo weirdness:
+        when swaping to from inbox to outbox the phots are still visible and you can see them switch over
+        The fix:
+            A a loading boolean to hide the components untiul compleation of the load message function 
+            MessagesComponent.ts:
+                loadMessage(){
+                    this.loading = true
+                    this.messageService.getMessages(this.pageNumber,this.pageSize,this.container).subscribe({
+                    next: response => {
+                        this.messages = response.result
+                        this.pagination = response.pagination
+                        this.loading = false;
+                    }
+                    })
+                }
+
+            slap an hidden decorator in the template and call it a day:
+                <tr [hidden]="loading" *ngFor="let message of messages"
+
+    Fix the time stamps and localize:
+        add a Z (read {{message.dateRead + 'Z' | timeago}})
+
+    Implement delete message:
+        MessagesController:
+            [HttpDelete("{id}")]
+            //both users need to delete the message for it to fully delete
+            public async Task<ActionResult> DeleteMessage(int id)
+            {
+                var username = User.GetUserName();
+                var message = await _messageRepository.GetMessage(id);
+                //verify the user is either the sender or recipient
+                if (message.SenderUsername != username && message.RecipientUsername != username)
+                    return Unauthorized("Not the sender or recipient of message");
+
+                if (message.SenderUsername == username) message.SenderDeleted = true;
+                if (message.RecipientUsername == username) message.RecipientDeleted = true;
+
+                if (message.SenderDeleted && message.RecipientDeleted)
+                {
+                    _messageRepository.DeleteMessage(message);
+                }
+                
+                if(await _messageRepository.SaveAllAsync()) return Ok();
+
+                return BadRequest("Problem Deleting the message");
+
+            }
+
+        Update the messageRepository and check add an inbox check for the deleted message:
+            query = messageParams.Container switch
+                {
+                    "Inbox" => query.Where(u => u.RecipientUsername == messageParams.Username && u.RecipientDeleted == false),
+                    "Outbox" => query.Where(u => u.SenderUsername == messageParams.Username && u.RecipientDeleted == false),
+                    _ => query.Where(u => u.RecipientUsername == messageParams.Username && u.DateRead == null && u.RecipientDeleted == false)           
+
+                var messages = await _context.Messages
+                    .Include(u => u.Sender).ThenInclude(p => p.Photos)
+                    .Include(u => u.Recipient).ThenInclude(p => p.Photos)
+                    .Where(
+                        m => m.RecipientUsername == currentUsername && m.RecipientDeleted == false &&
+                            m.SenderUsername == recipientUsername ||
+                            m.RecipientUsername == recipientUsername && m.SenderDeleted == false &&
+                            m.SenderUsername == currentUsername
+                    ).OrderBy(m => m.MessageSent)
+                    .ToListAsync();            
+
+
+        configure client delete button 
+            messageService:
+                deleteMessage(id:number){
+                    return this.http.delete(this.baseUrl + 'messages/' + id)
+                }
+        
+            call the service in the components
+                MessagesComponent:  
+                    deleteMessage(id:number){
+                        this.messageService.deleteMessage(id).subscribe({
+                        next: ()=> this.messages?.splice(this.messages?.findIndex(m=>m.id === id),1)
+                        })
+                    }
+                    <button class="btn btn-danger"  (click)="deleteMessage(message.id)">Delete</button>
+                    
+        delete button routes to the user profile need to change to stop the routing :
+            MessagesComponent:
+                add another click event 
+                    <button class="btn btn-danger"  (click)="$event.stopPropagation()" (click)="deleteMessage(message.id)">Delete</button>
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 
