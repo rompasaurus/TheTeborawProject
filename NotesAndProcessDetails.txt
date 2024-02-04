@@ -5756,6 +5756,278 @@ February 3 2024:
         inject the user manager instead of context 
         UserManager<AppUser> userManager
 
+    Configure Roles for application:
+
+        Create the roles in the  SeedUsers of Seed.cs:
+            inject  RoleManager<AppRole> roleManager
+            var roles = new List<AppRole>
+            {
+                new AppRole { Name = "Member" },
+                new AppRole { Name = "Admin" },
+                new AppRole { Name = "Moderator" }
+            };
+
+            foreach (var role in roles)
+            {
+                await roleManager.CreateAsync(role);
+            }
+
+            var admin = new AppUser
+            {
+                UserName = "admin"
+            };
+
+            await userManager.CreateAsync(admin, "Pa$$w0rd");
+            await userManager.AddToRolesAsync(admin, new[] { "Admin", "Moderator" });
+
+        Program.cs 
+            create rolemanager service and pass to the seed 
+            var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
+            await Seed.SeedUsers(userManager, roleManager);
+
+        Drop the db and do it again yo.
+
+        had to make the string props for city gender country and known as as nullable created migrations for it 
+
+    Add the roles to the return token as a claim:
+        TokenService:
+            inject the userManageService:
+                public TokenService(IConfiguration config, UserManager<AppUser> userManager)
+            mod  public string CreateToken(AppUser user):
+            change to  public async Task<string> CreateToken(AppUser user)
+                update the interface too
+
+            pull the roles from usermanager and add them as individual claims 
+                var roles = await _userManager.GetRolesAsync(user);
+                claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role,role)));
+
+    Example of how to user Roles on an api endpoint:
+        add the [Authorize(Roles = "Admin")] to the endpoint or     [Authorize(Roles = "Member")]
+
+            [Authorize(Roles = "Admin")]
+            [HttpGet]
+            //[FromQuery] will dictate the api endpoint call will be in the form of /api/users?pageNumber=1&pageSize=5
+            //By default with no query returns pageNumber 1 and pageSize 10
+            public async Task<ActionResult<IEnumerable<MemberDTO>>> GetUsers([FromQuery]UserParams userParams)
+
+
+     double check the jwt token returned with wat claims exist via jwt.ms 
+      example:  
+            "alg": "HS512",
+            "typ": "JWT"
+            }.{
+            "nameid": "11",
+            "unique_name": "admin",
+            "role": [
+                "Admin",
+                "Moderator"
+            ],
+            "nbf": 1707066326,
+            "exp": 1707671126,
+            "iat": 1707066326
+            }.[Signature]
+
+    Adding policy based authorizations:
+        Create AdminController as a policy test start with basic endpoint:
+            public class AdminController : BaseAPIController
+            {
+                
+                [Authorize(Policy = "RequireAdminRole")]
+                [HttpGet("users-with-roles")]
+                public ActionResult GetUsersWithRoles()
+                {
+                    return Ok("Only Admins can see this");
+                }
+
+                [Authorize(Policy = "ModeratePhotoRole")]
+                [HttpGet("photos-to-moderate")]
+                public ActionResult GetPhotosForModeration()
+                {
+                    return Ok("Admins or moderators can see this");
+                }
+            }
+
+    IdentityServiceExtensions add the policies:
+        services.AddAuthorization(opts =>
+            {
+                opts.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
+                opts.AddPolicy("ModeratePhotoRole", policy => policy.RequireRole("Admin", "Moderator"));
+            });
+
+    postmans:
+        access {{url}}/api/admin/users-with-roles ass non admin will fail with 403 forbidden error
+
+    GetUsersWIthRoles provide the data now:
+        AdminController:
+            [Authorize(Policy = "RequireAdminRole")]
+            [HttpGet("users-with-roles")]
+            public async Task<ActionResult> GetUsersWithRoles()
+            {
+                var users = await _userManager.Users
+                    .OrderBy(u => u.UserName)
+                    .Select(u => new
+                    {
+                        u.Id,
+                        Username = u.UserName,
+                        Roles = u.UserRoles.Select(r => r.Role.Name).ToList()
+                    })
+                    .ToListAsync();
+
+                return Ok(users);
+                // return Ok("Only Admins can see this");
+            }      
+        Endpoint now returns:
+            {
+                "id": 11,
+                "username": "admin",
+                "roles": [
+                    "Admin",
+                    "Moderator"
+                ]
+            },
+            {
+                "id": 12,
+                "username": "bob",
+                "roles": [
+                    "Member"
+                ]
+            },
+            {
+                "id": 10,
+                "username": "davis",
+                "roles": [
+                    "Member"
+                ]
+            }...
+
+    Edit roles as admin endpoint:
+        AdminController
+            //technically this should be a put request but need to return update list of roles 
+            [Authorize(Policy = "RequireAdminRole")]
+            [HttpPost("edit-roles/{username}")]
+            public async Task<ActionResult> EditRoles(string username,[FromQuery] string roles)
+            {
+                if (string.IsNullOrEmpty(roles)) return BadRequest("You Must Select at least one role");
+
+                var selectedRoles = roles.Split(",").ToArray();
+                var user = await _userManager.FindByNameAsync(username);
+                if(user == null) return NotFound();
+                var userRoles = await _userManager.GetRolesAsync(user);
+
+                var result = await _userManager.AddToRolesAsync(user, selectedRoles.Except(userRoles));
+                
+                if(!result.Succeeded) return BadRequest("Failed to add to roles");
+
+                //find all the roles that the user has that are not list in the roles query parameter 
+                //then remove said roles
+                result = await _userManager.RemoveFromRolesAsync(user, userRoles.Except(selectedRoles));
+                
+                if(!result.Succeeded) return BadRequest("Failed to remove from roles");
+
+                return Ok(await _userManager.GetRolesAsync(user));
+            }
+
+        test this endpoint now as lisa the admin:
+            {{url}}/api/admin/edit-roles/lisa?roles=Moderator,Member
+            that should succeds and add the roles to Lisa
+            need to login again as lisa to get the token with update roles claim set then you should able to access the getusers route and photos
+
+    Add the roles and editing to the client side:
+        Create new admin component:
+            ng g c admin/admin-panel
+
+        Add the route:
+            {path: 'admin', component: AdminPanelComponent}
+            will secure route later 
+        
+        Add a link to the admin component in nav bar:
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/admin" routerLinkActive = "active">Admin</a>
+            </li>
+        
+
+        Create a Role route gaurd to prevent admin page access:
+            AccountService:
+                //THis decodes the jwt token to pull the claims sets
+                getDecodedToken(token:string){
+                    return JSON.parse(atob(token.split('.')[1]))
+                }
+
+            user.ts add prop:
+                roles: string[]
+
+            note users with a single role will be return as a string instead of array this needs accounted for:
+            AccountService:
+                setCurrentUser(user: User){
+                    user.roles = []
+                    const roles= this.getDecodedToken(user.token).role
+                    Array.isArray(roles) ? user.roles = roles : user.roles.push(roles)
+                    localStorage.setItem('user', JSON.stringify(user))
+                    this.currentUserSource.next(user)
+                }
+
+        Generate and flesh out route gaurd:
+            cli:
+                ng g guard _guards/admin  > canActivate 
+            
+            adminGaurd.ts:
+                export const adminGuard: CanActivateFn = (route, state) => {
+                    const accountService = inject(AccountService);
+                    const toastr = inject(ToastrService);
+
+                    return accountService.currentUser$.pipe(
+                        map(user => {
+                        if(!user) return false
+                        if(user.roles.includes('Admin') || user.roles.includes('Moderator')){
+                            return true
+                        }else{
+                            toastr.error("You cannot enter this area")
+                            return false
+                        }
+                        })
+                    )
+                };              
+
+        Apply the guard to the route AppRoutingModule:
+            {path: 'admin', component: AdminPanelComponent, canActivate: [adminGuard]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 
