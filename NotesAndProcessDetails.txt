@@ -6030,30 +6030,172 @@ February 3 2024:
         <li *appHasRole="['Admin','Moderator']" class="nav-item">
 
 
+    Flesh out the admin panel:
+        AdminPanelComponent:
+            adding both user and photo management 
+            
+            ng cli create component
+                ng g c admin/user-management
+                ng g c admin/photo-management
+
+            create prelim template : 
+                <h2>Admin Panel</h2>
+                <div class="tab-panel">
+                    <tabset class="member-tabset">
+                        <tab heading="User Management" *appHasRole="['Admin']">
+                        <div class="container">
+                            <app-user-management></app-user-management>
+                        </div>
+                        </tab>
+                        <tab heading="Photo Management" *appHasRole="['Admin', 'Moderator']">
+                        <div class="container">
+                            <app-photo-management></app-photo-management>
+                        </div>
+                        </tab>
+                    </tabset>
+                </div>
+
+            Create a service to interact with the admin endpoint:
+                ng cli:
+                    ng g s _services/admin 
+
+            export class AdminService {
+                baseUrl = environment.apiUrl
+
+                constructor(private http: HttpClient) { }
+                getUsersWithRoles(){
+                    return this.http.get<User[]>(this.baseUrl + 'admin/users-with-roles')
+                }
+            }
+
+    Update UserManagementComponent:
+        export class UserManagementComponent implements OnInit{
+            users : User[] = []
+
+                constructor(private adminService: AdminService) {
+                }
+                ngOnInit(): void {
+                    this.getUsersWithRoles()
+                }
+
+                getUsersWithRoles(){
+                this.adminService.getUsersWithRoles().subscribe({
+                next: users => this.users = users
+                })
+                }
+        }
+        <div class="row">
+        <table class="table">
+            <thead>
+            <tr>
+                <th style="width: 30%">Username:</th>
+                <th style="width: 40%">Active Roles:</th>
+                <th style="width: 30%"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let user of users">
+                <td>{{user.username}}</td>
+                <td>{{user.roles}}</td>
+                <td><button class="btn info">Edit Roles</button></td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+
+    Wire up the Edit Roles button with a modal:
+        https://valor-software.com/ngx-bootstrap/#/components/modals?tab=overview
+        create a component based modal allowin data like the roles to be passed in.
+        import and export the modalmodule imports: [ModalModule.forRoot(),...] in the shared modules
 
 
+        ng cli create modal compoennt:
+            ng g c modals/roles-modal
 
+    Get that component slapped into the UserManagementComponent:
+        bsModalRef : BsModalRef<RolesModalComponent> = new BsModalRef<BsModalRef>()
+        constructor(private adminService: AdminService,private modalService: BsModalService) 
+        openRolesModal(){
+            this.bsModalRef = this.modalService.show(RolesModalComponent)
+            }
 
+    Copy template html from ngx bootstrap site for create modal with compoennt: 
+    add thge properties to the ts 
 
+    essentially copying the compoennt template from the ngx bootstra site with dummy data
 
+    create openclicke event in UserManagementComponent:
+        //created with dummy init state 
+          openRolesModal(){
+            const initialState: ModalOptions = {
+            initialState: {
+                list: [
+                'Do thing ',
+                'Another thing',
+                'Something Else'
+                ],
+                title: 'Test Modal'
+            }
+            }
+            this.bsModalRef = this.modalService.show(RolesModalComponent, initialState)
+            this.bsModalRef.content!.closeBtnName = 'Close'
+        }
 
+        apply the event to the template:
+            <td><button (click)="openRolesModal()" class="btn btn-info">Edit Roles</button></td>
 
+    FIll the modal with proper data:
+        RolesModalComponent:
+            updateChecked(checkedValue : string){
+                const index = this.selectedRoles.indexOf(checkedValue)
+                index != -1 ? this.selectedRoles.splice(index, 1) : this.selectedRoles.push(checkedValue)
+            }
+        html: 
+            <div class="modal-header">
+                <h4 class="modal-title pull-left">Edit Roles for {{username}}</h4>
+                <button type="button" class="btn-close close pull-right" aria-label="Close" (click)="bsModalRef.hide()">
+                <span aria-hidden="true" class="visually-hidden">&times;</span>
+                </button>
+                </div>
+                <div class="modal-body">
+                <form #rolesForme = "ngForm" id="rolesForm">
+                    <div class="form-check" *ngFor="let role of availableRoles">
+                    <input type="checkbox"
+                            class = form-check-input
+                            [checked]="selectedRoles.includes(role)"
+                            value = "role"
+                            (change)="updateChecked(role)"
+                            [disabled]="role === 'Admin' && username === 'admin'"
+                    >
+                    <labe>{{role}}</labe>
+                    </div>
+                </form>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn " (click)="bsModalRef.hide()">Submit</button>
+            </div>
+    
+    adminService add update get reques:
+        updateUserRoles(username:string, roles:string){
+            return this.http.post<string[]>(this.baseUrl + 'admin/edit-roles/' + username + '?roles=' + roles, {})
+        }                    
 
+    Get dat data in the modal openRolesModal UserManagementComponent:
+            openRolesModal(user:User){
+                const config = {
+                class: 'modal-dialog-centered',
+                initialState: {
+                    username: user.username,
+                    availableRoles: this.availableRoles,
+                    selectedRoles: [...user.roles]
+                }
+                }
+                this.bsModalRef = this.modalService.show(RolesModalComponent, config)
+                }
+            }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Get the submit wired in :
+        
 
 
 
