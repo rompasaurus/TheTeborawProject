@@ -27,7 +27,7 @@ public class UsersController : BaseAPIController
     }
     
     
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [HttpGet]
     //[FromQuery] will dictate the api endpoint call will be in the form of /api/users?pageNumber=1&pageSize=5
     //By default with no query returns pageNumber 1 and pageSize 10
@@ -49,7 +49,7 @@ public class UsersController : BaseAPIController
         
     }
     
-    [Authorize(Roles = "Member")]
+    //[Authorize(Roles = "Member")]
     [HttpGet("{username}")] // /api/users/2
     //gonna get  weird result if username not foune
     public async Task<ActionResult<MemberDTO>> GetUser(string username)
