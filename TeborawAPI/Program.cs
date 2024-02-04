@@ -42,9 +42,10 @@ try
 {
     var context = services.GetRequiredService<DataContext>();
     var userManager = services.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
     //with a freshly dropped db this will rerun all the migration scripts create the db and then run seed
     await context.Database.MigrateAsync();
-    await Seed.SeedUsers(userManager);
+    await Seed.SeedUsers(userManager, roleManager);
 }
 catch (Exception ex)
 {
