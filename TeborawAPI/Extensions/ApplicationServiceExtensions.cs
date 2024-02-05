@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Helpers;
 using TeborawAPI.Interfaces;
 using TeborawAPI.Services;
+using TeborawAPI.SignalR;
 
 namespace TeborawAPI.Extensions;
 
@@ -28,6 +29,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<LogUserActivity>();
         services.AddScoped<ILikesRepository, LikesRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddSignalR();
+        services.AddSingleton<PresenceTracker>();
         
         return services;
     }

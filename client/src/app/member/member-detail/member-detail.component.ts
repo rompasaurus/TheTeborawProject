@@ -2,13 +2,14 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import { Member } from '../../_models/member';
 import { MembersService } from '../../_services/members.service';
 import { ActivatedRoute } from '@angular/router';
-import {DatePipe, NgIf} from "@angular/common";
+import {AsyncPipe, DatePipe, NgIf} from "@angular/common";
 import {TabDirective, TabsetComponent, TabsModule} from "ngx-bootstrap/tabs";
 import {GalleryItem, GalleryModule, ImageItem} from "ng-gallery";
 import {TimeagoModule} from "ngx-timeago";
 import {MemberMessagesComponent} from "../member-messages/member-messages.component";
 import {MessagesService} from "../../_services/messages.service";
 import {Message} from "../../_models/message";
+import {PresenceService} from "../../_services/presence.service";
 
 @Component({
   selector: 'app-member-detail',
@@ -20,7 +21,8 @@ import {Message} from "../../_models/message";
     GalleryModule,
     DatePipe,
     TimeagoModule,
-    MemberMessagesComponent
+    MemberMessagesComponent,
+    AsyncPipe
   ],
   styleUrl: './member-detail.component.css'
 })
@@ -32,7 +34,8 @@ export class MemberDetailComponent implements OnInit {
   messages: Message[] = []
 
   //Route allows access to the username passed into the routers upon loading this component
-  constructor(private memberService: MembersService, private route: ActivatedRoute, private messageService: MessagesService){}
+  constructor(private memberService: MembersService, private route: ActivatedRoute,
+              private messageService: MessagesService,public presenceService: PresenceService){}
 
   ngOnInit(): void {
     this.route.data.subscribe({

@@ -4,6 +4,7 @@ using TeborawAPI.Data;
 using TeborawAPI.Entities;
 using TeborawAPI.Extensions;
 using TeborawAPI.Middleware;
+using TeborawAPI.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +24,11 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseCors(cPolicyBuilder => cPolicyBuilder.AllowAnyHeader()
-    .AllowAnyMethod().WithOrigins("https://localhost:4200"));
+app.UseCors(cPolicyBuilder => cPolicyBuilder
+    .AllowAnyHeader()
+    .AllowCredentials()
+    .AllowAnyMethod()
+    .WithOrigins("https://localhost:4200"));
 
 //The location of these need to be after cors establishment but prior to route and controller mapping 
 // Are you who you say you are 
@@ -35,6 +39,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller}/{action=Index}/{id?}");
+
+app.MapHub<PresenceHub>("hubs/presence");
 
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;

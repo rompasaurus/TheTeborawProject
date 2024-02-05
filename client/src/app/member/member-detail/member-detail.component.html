@@ -1,9 +1,12 @@
 <div class="row">
     <div class="col-4">
         <div class="card">
+            <img src="{{member.photoUrl || './assets/user.png'}}" alt="{{member.knownAs}}"
+                class="card-img-top img-thumbnail">
             <div class="card-body">
-                <img src="{{member.photoUrl || './assets/user.png'}}" alt="{{member.knownAs}}"
-                    class="card-img-top img-thumbnail">
+                <div class="mb-2" *ngIf="(presenceService.onlineUsers$ | async)?.includes(member.userName)">
+                  <i class="class fa fa-user-circle text-success"></i> Online Now
+                </div>
                 <div>
                     <strong>Location:</strong>
                     <p>{{member.city}}</p>
@@ -20,13 +23,13 @@
                     <strong>Member Since:</strong>
                     <p>{{member.created | date: 'longDate'}}</p>
                 </div>
-                <div class="card-footer">
-                    <div class="btn-group d-flex">
-                    <button class="btn btn-primary">Like</button>
-                    <button (click)="selectTab('Messages')" class="btn btn-success">Message</button>
-                    </div>
-                </div>
             </div>
+              <div class="card-footer">
+                  <div class="btn-group d-flex">
+                  <button class="btn btn-primary col-6">Like</button>
+                  <button (click)="selectTab('Messages')" class="btn btn-success col-6">Message</button>
+                  </div>
+              </div>
       </div>
     </div>
 

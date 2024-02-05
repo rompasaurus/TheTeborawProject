@@ -6221,6 +6221,269 @@ February 3 2024:
             })
         }
 
+February 5, 2024
+    SingalR implementation with chat:
+        Signal R good for:
+            Dashboards and monitoring
+            collaborative appsettings
+            apps the requre notifications
+
+        Features:
+            handles connection mamagement automatically and reconnects on drops 
+            sends message to all connected clients simultaneously
+            send messages to specific clients or groups of clients 
+            supports:
+                websockets, server sent events, long polling 
+            offers client side npm package 
+
+        
+    Add a precence Hub :
+        Create signalR folder in api with PesenceHub.cs:
+        Establish initial events upon user connect to see when other users either connect or disconnent implemnent  the Hub class 
+
+        public class PesenceHub : Hub
+        {
+            public override async Task OnConnectedAsync()
+            {
+                await Clients.Others.SendAsync("UserIsOnline", Context.User.GetUserName());
+            }
+
+            public override async Task OnDisconnectedAsync(Exception? exception)
+            {
+                await Clients.Others.SendAsync("UserIsOffline", Context.User.GetUserName());
+                await base.OnDisconnectedAsync(exception);
+            }
+        }
+
+        add the signalR service ApplicationServiceExtensions:
+            services.AddSignalR();
+
+        add the hub endpoint to the program.cs after map controler
+            app.MapHub<PresenceHub>("hubs/presence");
+
+    Need to setup auth with the hub so that specified users will be accessible:
+        this is done via sockets and thus the http headers will not be accessible:
+        need to mod the jwt auth service
+        IdentityServiceExtensions:
+            need to add another option to authenticate
+                services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                    .AddJwtBearer(opts =>
+                    {
+                        opts.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuerSigningKey = true,
+                            IssuerSigningKey = new SymmetricSecurityKey(Encoding
+                                .UTF8.GetBytes(config["TokenKey"])),
+                            ValidateIssuer = false,
+                            ValidateAudience = false
+                        };
+                        
+                        //Additional option that allows signalR access to the the auth access jwt token 
+                        //Cors needs updated as well to allow for this token transaction
+                        opts.Events = new JwtBearerEvents
+                        {
+                            OnMessageReceived = context =>
+                            {
+                                var accessToken = context.Request.Query["access_token"];
+                                var path = context.HttpContext.Request.Path;
+                                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                                {
+                                    context.Token = accessToken;
+                                }
+
+                                return Task.CompletedTask;
+                            }
+                        };      
+                    }     
+        Update cors in program.cs to allow Jwt bearer events:
+            app.UseCors(cPolicyBuilder => cPolicyBuilder
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .AllowAnyMethod()
+                .WithOrigins("https://localhost:4200"));
+
+    Client side Wiring to the hub:
+        install signalR via npmL:
+            npm install @microsoft/signalr --save
+        add the endpoint to the enviroment both dev and prod:  
+            export const environment = {
+                prodution: false,
+                apiUrl: 'https://localhost:5001/api/',
+                hubUrl: 'https://localhost:5001/hubs/',
+            };
+            export const environment = {
+                prodution: true,
+                apiUrl: 'api/',
+                hubUrl: 'hubs/',
+            };
+
+    Create service from the presence hub:
+        ng g s _services/presence
+    precence.ts:
+        export class PresenceService {
+            hubUrl = environment.hubUrl
+            private hubConnection?: HubConnection
+            constructor(private toastr: ToastrService) { }
+
+            createHubConnection(user: User){
+                this.hubConnection = new HubConnectionBuilder()
+                .withUrl(this.hubUrl + 'presence', {
+                    accessTokenFactory(): string | Promise<string> { return user.token }
+                })
+                .withAutomaticReconnect()
+                .build()
+
+                this.hubConnection.start().catch(error => console.log(error))
+
+
+                //This will wire a signal connect to the  presence hub of the api with defined method signatures speeling correct here is crit
+                this.hubConnection.on('UserIsOnline', username =>{
+                this.toastr.info(username + ' has connected')
+                })
+
+                this.hubConnection.on('UserIsOffline', username =>{
+                this.toastr.info(username + ' has disconnecte')
+                })
+            }
+            
+            stopHubConnection(){
+                this.hubConnection?.stop().catch(error => console.log(error))
+            }
+
+    connect to the presence service from the account service:
+        inject the PresenceService
+        apply the hub to the setCurrentUser:
+            this.presenceService.createHubConnection(user)
+        apply the stop to the logout:
+            this.presenceService.stopHubConnection()
+
+    Now signal r is setup and can be tested on the front end my logging in and out with mult users 
+        the networs > presense socket with show the details being passed in 
+
+    Make the presence less anoyting with a presence track component:
+        PresenceHub need a method to show who is currently connected to the signalR hub:
+            msft has not implemented this as a overridable option as it doesnt scale with multiple servers, 
+            need a scalable way to do this either redis, or via db entries 
+        For now will only implement in server memory tracking:
+            warning wont work with mult servers 
+        Use a dict to show online users :
+            note dictionary is not thread safe for multiple users to access at once need to lock it for each transaction event
+        
+        create SignalR/PresenceTracker:
+            public class PresenceTracker
+            {
+                private static readonly Dictionary<string, List<string>> OnlineUsers = new Dictionary<string, List<string>>();
+                
+                public Task UserConnected(string username, string connectionId)
+                {
+                    //Dic aint thread safe need to lock it
+                    lock (OnlineUsers)
+                    {
+                        if (OnlineUsers.ContainsKey(username))
+                        {
+                            OnlineUsers[username].Add(connectionId);
+                        }
+                        else
+                        {
+                            OnlineUsers.Add(username, new List<string>{connectionId});
+                        }
+                    }
+
+                    return Task.CompletedTask;
+                }
+
+                public Task UserDisconnected(string username, string connectionId)
+                {
+                    lock (OnlineUsers)
+                    {
+                        if (OnlineUsers.ContainsKey(username)) return Task.CompletedTask;
+                        OnlineUsers[username].Remove(connectionId);
+                        if (OnlineUsers[username].Count() == 0) OnlineUsers.Remove(username);
+                    }
+
+                    return Task.CompletedTask;
+                }
+
+                public Task<string[]> GetOnlineUsers()
+                {
+                    string[] onlineUsers;
+                    lock (OnlineUsers)
+                    {
+                        onlineUsers = OnlineUsers.OrderBy(k => k.Key).Select(k => k.Key).ToArray();
+                    }
+
+                    return Task.FromResult(onlineUsers);
+                }
+            }
+
+        add this as a service to ApplicationServiceExtensions:
+            will be a singleton as its needed server wide for the entirety of the duration of the app service 
+
+        inject that bad boy into the PresenceHub:
+            private readonly PresenceTracker _tracker;
+
+            public PresenceHub(PresenceTracker tracker)
+            {
+                _tracker = tracker;
+            }
+
+            public override async Task OnConnectedAsync()
+            {
+                await _tracker.UserConnected(Context.User.GetUserName(), Context.ConnectionId);
+                await Clients.Others.SendAsync("UserIsOnline", Context.User.GetUserName());
+                var currentUsers = await _tracker.GetOnlineUsers();
+                await Clients.All.SendAsync("GetOnlineUsers", currentUsers);
+            }
+
+            public override async Task OnDisconnectedAsync(Exception? exception)
+            {
+                await _tracker.UserDisconnected(Context.User.GetUserName(), Context.ConnectionId);
+                await Clients.Others.SendAsync("UserIsOffline", Context.User.GetUserName());
+                var currentUsers = await _tracker.GetOnlineUsers();
+                await Clients.All.SendAsync("GetOnlineUsers", currentUsers);
+                await base.OnDisconnectedAsync(exception);
+            }
+
+    setup client to pull list of logged in users:
+        PresenceService:
+            add obeservable and subscribe to it :
+                private onlineUsersSource = new BehaviorSubject<string[]>([])
+                onlineUsers$ = this.onlineUsersSource.asObservable()
+            mod the hubconnection listeners for the GetOnlineUsers:
+                this.hubConnection.on('GetOnlineUsers', usernames =>{
+                    this.onlineUsersSource.next(usernames)
+                })
+    Update the member card to show if online:
+        inject the presenceService as public:
+        in template aycn chain the observable 
+            <span [class.is-online]="(presenceService.onlineUsers$ | async)?.includes(member.userName)">
+        make dat shit blink:
+            @keyframes fa-blink {
+                0% {opacity: 1;}
+                100% {opacity: 0.4;}
+            }
+            .is-online{
+                animation: fa-blink 1.5s linear infinite;
+            }
+
+        add it to MemberDetailComponent:
+            <div class="mb-2" *ngIf="(presenceService.onlineUsers$ | async)?.includes(member.userName)">
+                <i class="class fa fa-user-circle text-success"></i> Online Now
+            </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
