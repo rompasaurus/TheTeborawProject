@@ -32,6 +32,7 @@ public static class ApplicationServiceExtensions
         services.AddSignalR();
         services.AddSingleton<PresenceTracker>();
         
+        
         return services;
     }
 }
