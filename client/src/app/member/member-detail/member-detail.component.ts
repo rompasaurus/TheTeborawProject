@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import { Member } from '../../_models/member';
 import { MembersService } from '../../_services/members.service';
 import { ActivatedRoute } from '@angular/router';
@@ -10,6 +10,9 @@ import {MemberMessagesComponent} from "../member-messages/member-messages.compon
 import {MessagesService} from "../../_services/messages.service";
 import {Message} from "../../_models/message";
 import {PresenceService} from "../../_services/presence.service";
+import {AccountService} from "../../_services/account.service";
+import {User} from "../../_models/user";
+import {take} from "rxjs";
 
 @Component({
   selector: 'app-member-detail',
@@ -26,16 +29,27 @@ import {PresenceService} from "../../_services/presence.service";
   ],
   styleUrl: './member-detail.component.css'
 })
-export class MemberDetailComponent implements OnInit {
+export class MemberDetailComponent implements OnInit, OnDestroy {
   @ViewChild('memberTabs', {static: true}) memberTabs?: TabsetComponent
   activeTab?: TabDirective
   member: Member = {} as Member
   images: GalleryItem[] = []
   messages: Message[] = []
+  user?: User
 
   //Route allows access to the username passed into the routers upon loading this component
-  constructor(private memberService: MembersService, private route: ActivatedRoute,
-              private messageService: MessagesService,public presenceService: PresenceService){}
+  constructor(private accountService: AccountService, private route: ActivatedRoute,
+              private messageService: MessagesService,public presenceService: PresenceService){
+    this.accountService.currentUser$.pipe(take(1)).subscribe({
+      next: user => {
+        if (user) this.user = user
+    }
+    })
+  }
+
+  ngOnDestroy(): void {
+        this.messageService.stopHubConnection()
+    }
 
   ngOnInit(): void {
     this.route.data.subscribe({
@@ -52,8 +66,8 @@ export class MemberDetailComponent implements OnInit {
 
   onTabActivated(data: TabDirective){
     this.activeTab = data
-    if(this.activeTab.heading === 'Messages'){
-      this.loadMessages()
+    if(this.activeTab.heading === 'Messages' && this.user){
+      this.messageService.createHubConnection(this.user, this.member.userName)
     }
   }
 
@@ -61,6 +75,8 @@ export class MemberDetailComponent implements OnInit {
     if(this.memberTabs){
       //the ! tells ts to stop checking cuz we're going rouge and shit about to get wierd
       this.memberTabs.tabs.find(x => x.heading === heading)!.active = true
+    }else{
+      this.messageService.stopHubConnection()
     }
   }
 

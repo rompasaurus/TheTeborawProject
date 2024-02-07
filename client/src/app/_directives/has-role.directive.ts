@@ -5,8 +5,8 @@ import {take} from "rxjs";
 
 
 //This directive will work similarly to the ngIf directive but in this case taking in array of string roles
-//the ngonit with determin if the user has one of the directives roles witl will then display the html child compoentent
-// the viewaContainerRef if the role exist else it will clear the container compoent showing notihing on the dom at all
+//the ngonit will determine if the user has one of the directives roles it will then display the html child component
+// ..the viewaContainerRef if the role exist else it will clear the container compoent showing notihing on the dom at all
 @Directive({
   selector: '[appHasRole]' // *appHasRole='['Admin,"Thing']"
 })

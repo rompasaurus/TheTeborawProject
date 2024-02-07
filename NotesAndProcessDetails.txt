@@ -6578,6 +6578,150 @@ February 6 2024
                     this.hubConnection?.stop()
                 }
 
+February 7 2024:
+    Tie message components into the hub:
+        MemberDetailComponent:
+            update selectTab > to use the mesaage service hub connection
+            load in the user:
+              constructor(private accountService: AccountService, private route: ActivatedRoute,
+                    private messageService: MessagesService,public presenceService: PresenceService){
+                    this.accountService.currentUser$.pipe(take(1)).subscribe({
+                    next: user => {
+                        if (user) this.user = user
+                    }
+              onTabActivated(data: TabDirective){
+                    this.activeTab = data
+                    if(this.activeTab.heading === 'Messages' && this.user){
+                        this.messageService.createHubConnection(this.user, this.member.userName)
+                    }else{
+                        this.messageService.stopHubConnection()
+                    }
+                }
+        implement on destroy to end the signal connection on routing from the message compoent
+            ngOnDestroy(): void {
+                this.messageService.stopHubConnection()
+            }
+        load the messages in the MemberMessagesComponent instead of inheriting from the profile:
+            make messageService public and use it in the template 
+                <div *ngIf="(messagesService.messageThreads$ | async)?.length === 0">
+                    No messages yet.... say hi by using the message box below
+                </div>
+
+                <ul *ngIf="(messagesService.messageThreads$ | async)?.length === 0" class="chat" >
+                <li *ngFor="let message of (messagesService.messageThreads$ | async)">
+
+    Send those messages:
+        messagesService:
+            on createHubConnection pull the messages in and create a new message object with new messages replaces the messageThreadSource
+                this.hubConnection.on('NewMessage', message => {
+                    this.messageThreads$.pipe(take(1)).subscribe({
+                        next: messages => {
+                        this.messageThreadSource.next([...messages, message])
+                        }
+                    })
+                })
+
+            on sendMessage change from http call to hub service call:
+                sendMessage(username:string, content:string){
+                        return this.hubConnection?.invoke('SendMessage', {recipientUsername: username, content})
+                }                
+        messages send now but are not marked as ready if the user is online and on the message thread
+
+        Tracking the messages:
+            need to know if the user is in the same group and who's in the group when the message is sent complex because multipl signal r message servers can be in place 
+
+            need to transition from the dictionary to a database tracking
+
+            need to create an entity for this:
+                Create group.cs entitiy and connection.cs :
+                public class Group
+                {
+                    public Group(string name)
+                    {
+                        this.name = name;
+                    }
+                    [Key] public string name { get; set; }
+                    public ICollection<Connection> Connections { get; set; } = new List<Connection>();
+                }
+
+                public class Connection
+                {
+                    //empty constructo need so that a init Connection can be created without params
+                    public Connection()
+                    {
+                        
+                    }
+                    public Connection(string connectionId, string username)
+                    {
+                        ConnectionId = connectionId;
+                        Username = username;
+                    }
+
+                    public string ConnectionId { get; set; }
+                    public string Username { get; set; }
+                    
+                }
+
+        Wire MessageRepository to use this entity now:
+            add to the interface:
+                void AddGroup(Group group);
+                void RemoveConnection(Connection connection);
+                Task<Connection> GetConnection(string connectionId);
+                Task<Group> GetMessageGroup(string groupName);
+
+            update the DataCOntext to use the new entities:
+                public DbSet<Group> Groups { get; set;}
+                public DbSet<Connection> Connections { get; set;}
+
+            Implement these methods:
+                public void AddGroup(Group group)
+                {
+                    _context.Groups.Add(group);
+                }
+
+                public void RemoveConnection(Connection connection)
+                {
+                    _context.Remove(connection);
+                }
+
+                public async Task<Connection> GetConnection(string connectionId)
+                {
+                    return await _context.Connections.FindAsync(connectionId);
+                }
+
+                public async Task<Group> GetMessageGroup(string groupName)
+                {
+                    return await _context.Groups
+                        .Include(x => x.Connections)
+                        .FirstOrDefaultAsync(x => x.name == groupName);
+                }                
+
+            Add dat migration yo:
+                dotnet ef migrations add GroupConnectionTracking
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
