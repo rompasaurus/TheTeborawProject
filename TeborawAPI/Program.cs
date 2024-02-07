@@ -53,6 +53,9 @@ try
     var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
     //with a freshly dropped db this will rerun all the migration scripts create the db and then run seed
     await context.Database.MigrateAsync();
+    //only good for smaall ops
+    //context.Connections.RemoveRange(context.Connections);
+    await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
     await Seed.SeedUsers(userManager, roleManager);
 }
 catch (Exception ex)

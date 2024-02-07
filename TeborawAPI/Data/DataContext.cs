@@ -16,9 +16,9 @@ public class DataContext : IdentityDbContext<AppUser, AppRole, int,
     //this is now inherited from the identitydbcontext
     // public DbSet<AppUser> Users { get; set; }
     public DbSet<UserLike> Likes { get; set; }
-    
     public DbSet<Message> Messages { get; set; }
-
+    public DbSet<Group> Groups { get; set;}
+    public DbSet<Connection> Connections { get; set;}
     //this manually create the many to manny relations with the userlike table and estblish the delete cascade mechanism
     //its possible ef can handle this by default but you have more control this way
     protected override void OnModelCreating(ModelBuilder builder)

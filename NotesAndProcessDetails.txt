@@ -6699,31 +6699,188 @@ February 7 2024:
             Add dat migration yo:
                 dotnet ef migrations add GroupConnectionTracking
 
+            Mod Message hub to add to group or create group if not exists:
+                private async Task<bool> AddToGroup(string groupName)
+                {
+                    var group = await _messageRepository.GetMessageGroup(groupName);
+                    var connection = new Connection(Context.ConnectionId, Context.User.GetUserName());
+                    if (group == null)
+                    {
+                        group = new Group(groupName);
+                        _messageRepository.AddGroup(group);
+                    }
+                    group.Connections.Add(connection);
+                    return await _messageRepository.SaveAllAsync();
+                }        
+
+            add method to remove the user from the group as well:
+                private async Task RemoveFromMessageGroup()
+                {
+                    var connection = await _messageRepository.GetConnection(Context.ConnectionId);
+                    _messageRepository.RemoveConnection(connection);
+                    await _messageRepository.SaveAllAsync();
+                }                       
+
+            OnConnectedAsync():
+                addTogroup should be called here 
+
+            OnDisconnectedAsync call remove:
+                await RemoveFromMessageGroup();
+
+            sendMessage need to get the group from the db now and update message date read if connections exist:
+                var groupName = GetGroupName(sender.UserName, recipient.UserName);
+                var group = await _messageRepository.GetMessageGroup(groupName);
+                if (group.Connections.Any(x => x.Username == recipient.UserName))
+                {
+                    message.DateRead = DateTime.UtcNow;
+                }
+                
+                _messageRepository.AddMessage(message);
+
+                if (await _messageRepository.SaveAllAsync())
+                {
+                    await Clients.Group(groupName).SendAsync("NewMessage", _mapper.Map<MessageDTO>(message));
+                }               
+
+            test the change and you will seed a read notice will show except it shows from the future
+
+            new problem is member can be in profile but not in message tab and will show as having read the message
+                ondisconnect never gets called and will not get called if browser crash or closes in a nonstand way 
+
+            when the application restarts the connections should be cleared out 
+                need to clear the connection upon startup:
+                    program.cs:
+                        add before the seed call:
+                            await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
+
+            FIx the dates remove the zeds 
+                Need to establish utc on the server side:
+                    use auto mapper to handle shiz
+                    this fixes date sent 
+                        CreateMap<DateTime, DateTime>().ConvertUsing(d => DateTime.SpecifyKind(d,DateTimeKind.Utc));
+                    THis ensure datimes pulled from the db get passed to the front end as a tuc value 
+
+                    DateRead is an option datetime needs another mapping profile for that:
+                        CreateMap<DateTime?, DateTime?>().ConvertUsing(d => d.HasValue ? DateTime.SpecifyKind(d.Value, DateTimeKind.Utc) : null);
 
 
+            Add a notification if the user is not on the message tab and receives a message:
+                add a method to get the Connection for a user in the presence hub
+                    //THis is not scalable 
+                    public static Task<List<string>> GetConnectionsForUser(string username)
+                    {
+                        List<string> connectionIds;
+                        lock (OnlineUsers)
+                        {
+                            connectionIds = OnlineUsers.GetValueOrDefault(username);
+                        }
 
+                        return Task.FromResult(connectionIds);
+                    }
+                Use this in the message hub as a way to setup a notification listener:
+                    the scenario can occur where the user is onlie but never established a connection with another memebr on the message hub thus thers no way to send a notification wtihout that  the hub can however acess other signal r hub via dependency injection
 
+                    MessageHub:
+                        public MessageHub(IMessageRepository messageRepository, IUserRepository userRepository, IMapper mapper, IHubContext<PresenceHub> presenceHub)
 
+                    call the GetCOnnection from the sendmessage of the message hub
+                        //Essentially this will if no message group connection established reach out to the precence hub and 
+                        //Retrieve the connections from there and sent a message alert of newmessage received 
+                        else
+                        {
+                            var connections = await PresenceTracker.GetConnectionsForUser(recipient.UserName);
+                            if (connections != null)
+                            {
+                                await _presenceHub.Clients.Clients(connections).SendAsync("NewMessageReceived",
+                                    new {username = sender.UserName, knoownAs = sender.KnownAs});
+                            }
+                        }                   
 
+                presenceService can now be mapped to this NewMessageReceived Connection event:
+                    this.hubConnection.on("NewMessageReceived", ({username,knownAs}) =>{
+                        this.toastr.info(knownAs + ' has sent you a new message! Click me and find out')
+                        })
+                    }
 
+                Im retarded the presenc hub needs to be injected via its interface 
+                    IHubContext<PresenceHub> presenceHub)
 
+            THe MessagesComponent needs to update as well upon be routed to a connection needs to be setup 
+            especially in the case of new user no previous connection group 
 
+            route reuse class needs implemented 
+                inside _services/customRouteReuseStrategy.ts
+                export class CustomRouteReuseStrategy implements RouteReuseStrategy {
+                    shouldDetach(route: ActivatedRouteSnapshot): boolean {
+                        return false
+                    }
+                    store(route: ActivatedRouteSnapshot, handle: DetachedRouteHandle | null): void {
+                    }
+                    shouldAttach(route: ActivatedRouteSnapshot): boolean {
+                        return false
+                    }
+                    retrieve(route: ActivatedRouteSnapshot): DetachedRouteHandle | null {
+                        return null
+                    }
+                    shouldReuseRoute(future: ActivatedRouteSnapshot, curr: ActivatedRouteSnapshot): boolean {
+                        return false
+                    }
+            add this as a providor in app.module
+                {provide: RouteReuseStrategy, useClass: CustomRouteReuseStrategy}
 
+    Crean up the queries:
+        presenceHub:
+            await Clients.All.SendAsync("GetOnlineUsers", currentUsers); is excessive dont need to send to all users 
+            change to :
+                await Clients.Caller.SendAsync("GetOnlineUsers", currentUsers);
+            await Clients.All.SendAsync("GetOnlineUsers", currentUsers);
+            change to:
+                remove it 
 
+        PresenceTracker:
+            UserDisconnected and UserConnected are currently notifying any user connection event when it should be only events wher either the onlineuser is added or removed from not the connection id 
 
+            change the task to task<bool>
+            bool isOnline = false;
+            return Task.FromResult<bool>(isOnline);
 
+            and 
+                bool isOffline = false;
+                lock (OnlineUsers)
+                {
+                    if (OnlineUsers.ContainsKey(username)) Task.FromResult<bool>(isOffline);
+                    OnlineUsers[username].Remove(connectionId);
+                    if (OnlineUsers[username].Count() == 0)
+                    {
+                        OnlineUsers.Remove(username);
+                        isOffline = true;
+                    }
+                }
+                return Task.FromResult<bool>(isOffline);
 
+            mod PresenceHub OnConnectedAsync to check this boolean value now :
+                var isOnline = await _tracker.UserConnected(Context.User.GetUserName(), Context.ConnectionId);
+                if(isOnline) await Clients.Others.SendAsync("UserIsOnline", Context.User.GetUserName());
 
+                var isOffline = await _tracker.UserDisconnected(Context.User.GetUserName(), Context.ConnectionId);
+                if(isOffline) await Clients.Others.SendAsync("UserIsOffline", Context.User.GetUserName());
 
+        Now update the precense service:   
+            updates the onlineUserObservable prolly dont need the toast messages but I like em  
+            //This will wire a signal connect to the  presence hub of the api with defined method signatures speeling correct here is crit
+            this.hubConnection.on('UserIsOnline', username =>{
+            this.onlineUsers$.pipe(take(1)).subscribe({
+                next: usernames => this.onlineUsersSource.next([...usernames, username])
+            })
+            this.toastr.info(username + ' has connected')
+            })
 
-
-
-
-
-
-
-
-
+            this.hubConnection.on('UserIsOffline', username =>{
+            this.onlineUsers$.pipe(take(1)).subscribe({
+                next: usernames => this.onlineUsersSource.next(usernames.filter(x=> x ! = username))
+            })
+            this.toastr.info(username + ' has disconnected')
+            })           
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
