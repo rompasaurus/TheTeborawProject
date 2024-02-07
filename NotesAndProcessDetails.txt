@@ -6882,6 +6882,78 @@ February 7 2024:
             this.toastr.info(username + ' has disconnected')
             })           
 
+    Clean up the message hub:
+        dont need to send the entire message thread each time:
+            return group instead of boolean:
+                private async Task<Group> AddToGroup(string groupName)
+
+        add method to get group base on connection id in MessageRepository:
+            public async Task<Group> GetGroupForConnection(string connectionId)
+            {
+                return await _context.Groups
+                    .Include(x => x.Connections)
+                    .Where(x => x.Connections.Any(c => c.ConnectionId == connectionId))
+                    .FirstOrDefaultAsync();
+            }
+
+        add and remove from message group should return a group:
+            private async Task<Group> AddToGroup(string groupName)
+                {
+                    var group = await _messageRepository.GetMessageGroup(groupName);
+                    var connection = new Connection(Context.ConnectionId, Context.User.GetUserName());
+                    if (group == null)
+                    {
+                        group = new Group(groupName);
+                        _messageRepository.AddGroup(group);
+                    }
+                    group.Connections.Add(connection);
+                    if(await _messageRepository.SaveAllAsync()) return group;
+                    throw new HubException("Failed to add to group");
+                }
+
+                
+                //only removes the connecion from db onDisconnect method will handle the signalR connection removal
+                private async Task<Group> RemoveFromMessageGroup()
+                {
+                    var group = await _messageRepository.GetGroupForConnection(Context.ConnectionId);
+                    var connection = group.Connections.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
+                    _messageRepository.RemoveConnection(connection);
+                    if(await _messageRepository.SaveAllAsync()) return group;
+                    throw new HubException("Failed to remove from group");
+                }
+            Onconnected now needs update to use the groups:
+                await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+                var group = AddToGroup(groupName);
+
+                await Clients.Group(groupName).SendAsync("UpdateGroup", group);
+                
+                var messages = await _messageRepository.GetMessageThread(Context.User.GetUserName(), otherUser);
+
+                await Clients.Caller.SendAsync("ReceiveMessageThread", messages);
+
+            onDisconnect now as well:
+                public override async Task OnDisconnectedAsync(Exception? exception)
+                {
+                    var group = await RemoveFromMessageGroup();
+                    await Clients.Group(group.name).SendAsync("UpdatedGroup");
+                    await base.OnDisconnectedAsync(exception);
+                }
+
+            Get the client cleaned for the new groups and update:
+                create _models/group.ts
+                export interface Group{
+                    name:string
+                    connections: Connection[]
+                }
+                export interface Connection {
+                    connectionId:string
+                    username:string
+                }
+
+            messageService:
+                use the updatedgroup method:
+                    
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 

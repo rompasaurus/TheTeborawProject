@@ -7,6 +7,8 @@ import {HubConnection, HubConnectionBuilder} from "@microsoft/signalr";
 import {User} from "../_models/user";
 import {error} from "@angular/compiler-cli/src/transformers/util";
 import {BehaviorSubject, take} from "rxjs";
+import {group} from "@angular/animations";
+import {Group} from "../_models/Group";
 
 @Injectable({
   providedIn: 'root'
@@ -32,6 +34,23 @@ export class MessagesService {
 
     this.hubConnection.on('ReceiveMessageThread' ,messages =>{
       this.messageThreadSource.next(messages)
+    })
+
+    // this is need now because only the new user will receive the message thread when loading if the group
+    // exists already the already connected user needs an update to the read messages when this takes place as they will no longer have a refresseged message list
+    this.hubConnection.on('UpdatedGroup', (group:Group) => {
+      if(group.connections.some(x=> x.username === otherUsername)){
+        this.messageThreads$.pipe(take(1)).subscribe({
+          next: messages => {
+            messages.forEach(message => {
+              if(!message.dateRead){
+                message.dateRead = new Date(Date.now())
+              }
+            })
+            this.messageThreadSource.next([...messages])
+          }
+        })
+      }
     })
 
     this.hubConnection.on('NewMessage', message => {
