@@ -7032,6 +7032,152 @@ February 8 2024:
 
     also forgot an await when creating a group ffs 
 
+    Clean up the member list population query:
+        we are currently with this:
+        var currentUser = await _unitOfWork.UserRepository.GetUserByUsernameAsync(User.GetUserName());
+        pulling all user data just for the gender information:
+        need to create a repo method just to pull the user gender via userRepository:
+            public async Task<string> GetUserGender(string username)
+                {
+                    return await _context.Users.Where(x => x.UserName == username)
+                        .Select(x => x.Gender)
+                        .FirstOrDefaultAsync();
+                }
+        Then call it like so:
+            var gender = await _unitOfWork.UserRepository.GetUserGender(User.GetUserName());
+                userParams.CurrentUserName = User.GetUserName();
+
+
+    Add a confirmation service to prompt user to save changes:
+        create new service confirm service:
+            ng g s _services/confirm
+
+        confirm.ts:
+            export class ConfirmService {
+                bsModalRef? : BsModalRef
+                constructor(private modalService : BsModalService) { }
+
+                confirm(
+                    title = 'Confirmation',
+                    message = 'YOu Fukcking sure bout this?!?',
+                    btnOkText = 'Ok',
+                    btnCancelText = 'Cancel'
+                ) {
+                    const config = {
+                    initialState: {
+                        title,
+                        message,
+                        btnOkText,
+                        btnCancelText
+                    }
+                    }
+                    this.bsModalRef = this.modalService.show('confirm',config)
+                }
+                }
+        Create the confirm modal component via ng cli:
+            ng g c modals/confirm-dialog
+
+            export class ConfirmDialogComponent implements OnInit{
+                title = ''
+                message = ''
+                btnOkText = ''
+                btnCancelText = ''
+                result = false
+
+                constructor(public bsModalRef: BsModalRef) {
+                }
+                ngOnInit() {
+                }
+
+                confirm(){
+                    this.result =true
+                    this.bsModalRef.hide()
+                }
+                decline(){
+                    this.bsModalRef.hide()
+                }
+            }
+        
+        <div class="modal-header">
+            <h4 class="modal-title pull-left">
+                {{title}}
+            </h4>
+        </div>
+        <div class="modal-body">
+            <p>{{message}}</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-success" (click)="confirm()">{{btnOkText}}</button>
+            <button class="btn btn-danger" (click)="decline()">{{btnCancelText}}</button>
+        </div>
+
+    Add the componet as the type for the confirm serviceL:
+          bsModalRef? : BsModalRef<ConfirmDialogComponent>
+          this.bsModalRef = this.modalService.show(ConfirmDialogComponent,config)
+
+    in the confirms service add a boolean observable to listen for when the modal is hidden and retrieve the result what the user selecte tpo close it 
+        confirm(
+                title = 'Confirmation',
+                message = 'You Fucking sure bout this?!?',
+                btnOkText = 'Ok',
+                btnCancelText = 'Cancel'
+            ): Observable<boolean> {
+                const config = {
+                initialState: {
+                    title,
+                    message,
+                    btnOkText,
+                    btnCancelText
+                }
+                }
+                this.bsModalRef = this.modalService.show(ConfirmDialogComponent,config)
+                return this.bsModalRef.onHidden!.pipe(
+                map(() => {
+                    return this.bsModalRef!.content!.result
+                })
+                )
+            }
+
+    inject the ConfirmService to the preventUnsavedChangesGuard:
+        export const preventUnsavedChangesGuard: CanDeactivateFn<MemberEditComponent> = (component) => {
+        const confirmService = inject(ConfirmService)
+        if(component.editForm?.dirty){
+            return confirmService.confirm()
+        }
+        return true;
+        };
+
+
+    Clean up the member messages:
+        the message thread just keeps growing vertically, need to add a scrolling solutions:
+
+        MemberListComponent:
+            add template reference variable of #scrollMe to the ul component containing the messages:
+            <ul
+                #scrollMe
+                style="overflow: scroll; height: 500px"
+                [scrollTop]="scrollMe.scrollHeight"
+                *ngIf="(messagesService.messageThreads$ | async)?.length !== 0" class="chat" >
+
+        this works to limit scroll however angular slaps out error:
+            core.mjs:11806 ERROR Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value for 'scrollTop': '728'. Current value: '832'. Expression location: _MemberMessagesComponent component. Find more at https://angular.io/errors/NG0100
+            wont really see the error in prd though 
+
+        need to change the change detection strategy:
+            MemberMessagesComponent:
+                @component{
+                    changeDetection: ChangeDetectionStrategy.OnPush,
+                }
+
+    CLear user login and pw on logout:
+        need to destroy the nav component on logout:
+        just gotta clear the model object in navcomponent
+            this.accountService.login(this.model).subscribe({
+            next: _ => {
+                this.router.navigateByUrl('/members')
+                this.model = {}
+            },
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 
