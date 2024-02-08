@@ -55,18 +55,16 @@ public class MessageRepository : IMessageRepository
     //pull the messages and mark the one where the recipient username is the current logged in user as read by updateing the date read
     public async Task<IEnumerable<MessageDTO>> GetMessageThread(string currentUsername, string recipientUsername)
     {
-        var messages = await _context.Messages
-            .Include(u => u.Sender).ThenInclude(p => p.Photos)
-            .Include(u => u.Recipient).ThenInclude(p => p.Photos)
+        var query = _context.Messages
             .Where(
                 m => m.RecipientUsername == currentUsername && m.RecipientDeleted == false &&
                      m.SenderUsername == recipientUsername ||
                      m.RecipientUsername == recipientUsername && m.SenderDeleted == false &&
                      m.SenderUsername == currentUsername
             ).OrderBy(m => m.MessageSent)
-            .ToListAsync();
+            .AsQueryable();
 
-        var unreadMessages = messages.Where(m => m.DateRead == null 
+        var unreadMessages = query.Where(m => m.DateRead == null 
                                                  && m.RecipientUsername == currentUsername).ToList();
         if(unreadMessages.Any())
         {
@@ -74,16 +72,15 @@ public class MessageRepository : IMessageRepository
             {
                 msg.DateRead = DateTime.UtcNow;
             }
-            await _context.SaveChangesAsync();
         }
 
-        return _mapper.Map<IEnumerable<MessageDTO>>(messages);
+        return await query.ProjectTo<MessageDTO>(_mapper.ConfigurationProvider).ToListAsync();
     }
 
-    public async Task<bool> SaveAllAsync()
-    {
-        return await _context.SaveChangesAsync() > 0;
-    }
+    // public async Task<bool> SaveAllAsync()
+    // {
+    //     return await _context.SaveChangesAsync() > 0;
+    // }
 
     public void AddGroup(Group group)
     {

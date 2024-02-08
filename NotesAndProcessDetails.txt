@@ -6952,7 +6952,85 @@ February 7 2024:
 
             messageService:
                 use the updatedgroup method:
-                    
+
+February 8 2024:
+    Unit of work pattern:
+        what is it , 
+        optimising the db queries 
+        adding a confirm dialog service 
+
+    Unit of Work:
+        maintains a list of objects affected by a business transaction and coordinates the writing of changes
+        write to the db at the very end 
+
+    Whats happening now:
+        user repo, message repo, some repos all make individual request for gettting the data conetext then getting the data then saving the data 
+        unitof work will allow one designated place to retrieve and update data 
+        inject the unit of work into the controllers to hadle updates 
+
+    Create new interface IUnitOfWork    then data class unit of work 
+        public class UnitOfWork : IUnitOfWork
+        {
+            private readonly DataContext _context;
+            private readonly IMapper _mapper;
+
+            public UnitOfWork(DataContext context, IMapper mapper)
+            {
+                _context = context;
+                _mapper = mapper;
+            }
+            public IUserRepository UserRepository => new UserRepository(_context, _mapper);
+            public IMessageRepository MessageRepository => new MessageRepository(_context, _mapper);
+            public ILikesRepository LikesRepository => new LikesRepository(_context);
+            public async Task<bool> Complete()
+            {
+                return await _context.SaveChangesAsync() > 0;
+            }
+
+            public bool HasChanges()
+            {
+                return _context.ChangeTracker.HasChanges();
+            }
+        }
+
+    Remove the repository services and use the unit of work instead ApplicationServiceExtensions:
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+    Remove the saveall from the repos
+
+    Address the errors:
+        command shift l will highlight any word/function with the same name on the page and allow edting to all at once , have to disabel google search shortcut on a mac 
+
+    message queries are heavy need to tidy up messageRepository:
+        GetMessageThread:
+            get rid of eager loading of photos 
+                .Include(u => u.Sender).ThenInclude(p => p.Photos)
+                .Include(u => u.Recipient).ThenInclude(p => p.Photos)
+        make the first message call a query instead 
+            var query = _context.Messages
+                .Where(
+                    m => m.RecipientUsername == currentUsername && m.RecipientDeleted == false &&
+                        m.SenderUsername == recipientUsername ||
+                        m.RecipientUsername == recipientUsername && m.SenderDeleted == false &&
+                        m.SenderUsername == currentUsername
+                ).OrderBy(m => m.MessageSent)
+                .AsQueryable();
+
+            var unreadMessages = query.Where(m => m.DateRead == null 
+                                    && m.RecipientUsername == currentUsername).ToList();
+
+    return the quert as a projection to the dto:
+        return await query.ProjectTo<MessageDTO>(_mapper.ConfigurationProvider).ToListAsync();
+
+    fucked something up:    
+    fail: Microsoft.AspNetCore.SignalR.HubConnectionHandler[1]
+      Error when dispatching 'OnConnectedAsync' on hub.
+      System.NullReferenceException: Object reference not set to an instance of an object.
+         at TeborawAPI.SignalR.MessageHub.OnConnectedAsync() in /Users/rompasaurus/TeborawWebApp/TeborawAPI/SignalR/MessageHub.cs:line 37
+    
+    typo when injecting the IUnitOfWork was missing the underscore fed it all up
+
+    also forgot an await when creating a group ffs 
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP

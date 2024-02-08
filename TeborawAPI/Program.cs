@@ -55,8 +55,8 @@ try
     await context.Database.MigrateAsync();
     //only good for smaall ops
     //context.Connections.RemoveRange(context.Connections);
-    await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
     await Seed.SeedUsers(userManager, roleManager);
+    await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
 }
 catch (Exception ex)
 {
