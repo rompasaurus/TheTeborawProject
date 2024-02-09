@@ -7234,6 +7234,47 @@ Publishing THe web and api application:
                     WebRootPath = "wwwroot/browser"
                 });
 
+
+    Adding a fallback controller to let angular handle routing:
+    NOT SURE THIS IS NEEDED AS THE ANG ROUTES WORK JUST FINE 
+        public class FallbackController: Controller
+        {
+            public ActionResult Index()
+            {
+                return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(),
+                    "wwwroot/browser", "index.html"), "text/HTML");
+            }
+        }
+        app.MapFallbackToController("Index", "Fallback");
+
+
+
+    Remove the fake delay:
+        loading interceptor:
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
+
+
+
+
+BUILD PROCESS NOW:
+    go to client app folder run :
+        ng build 
+
+        this generates the js and index files and places into the 
+        TeborawAPI/wwwroot/browser 
 
