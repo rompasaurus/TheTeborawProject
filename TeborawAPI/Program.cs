@@ -66,7 +66,7 @@ try
     //only good for smaall ops
     //context.Connections.RemoveRange(context.Connections);
     await Seed.SeedUsers(userManager, roleManager);
-    await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
+    await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE \"Connections\"");
 }
 catch (Exception ex)
 {

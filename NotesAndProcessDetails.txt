@@ -7246,12 +7246,19 @@ Publishing THe web and api application:
             }
         }
         app.MapFallbackToController("Index", "Fallback");
+                return next.handle(req).pipe(
+                //this is a synthetic delay for development to allow for loading bar to show itself
+                //Idenetity does nothing but cant have a null fn call 
+                (environment.prodution ? identity : delay(1000),
 
 
+        now if ngbuild 
+            https://localhost:5001/members/ruthie?tab=Messages 
+            will be effectively treated as a production envirionment and loading should be gone 
 
     Remove the fake delay:
         loading interceptor:
-            
+
 
 
 
