@@ -6,8 +6,12 @@ using TeborawAPI.Extensions;
 using TeborawAPI.Middleware;
 using TeborawAPI.SignalR;
 
-var builder = WebApplication.CreateBuilder(args);
-
+// var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    WebRootPath = "wwwroot/browser"
+});
 builder.Services.AddApplicationsServices(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration);
 

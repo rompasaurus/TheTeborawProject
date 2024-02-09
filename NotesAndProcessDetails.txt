@@ -7221,7 +7221,18 @@ Publishing THe web and api application:
                 "maximumWarning": "1mb",
                   "maximumError": "2mb"
         The build shoult generate the wwwroot folder with js content:
-            
+
+        The angular should host auto,atically asuming there is an index.html in the wwwroot folder which... there isnt
+        Nagular seems to pup it inside a browser folder in wwwroot
+
+        need to either update the pass on the api or get angular to not put it in the browser folder
+
+        updated the builder in the api to use the borwser folder:
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+                {
+                    Args = args,
+                    WebRootPath = "wwwroot/browser"
+                });
 
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
