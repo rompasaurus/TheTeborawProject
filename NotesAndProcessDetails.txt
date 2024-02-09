@@ -7178,6 +7178,51 @@ February 8 2024:
                 this.model = {}
             },
 
+Publishing THe web and api application:
+    api is going to be setup to host the angular js files for the front end 
+
+    first steps:
+        refactor the localhost urls in the client app and set as an environment variable:
+
+    Set the output director for the angular build fiels:
+        angular.json > build > options : 
+            the output will be hosted by the api and thus need to be output in a www root folder of the API:
+                "build": {
+                    "builder": "@angular-devkit/build-angular:application",
+                    "options": {
+                        "outputPath": "../TeborawAPI/wwwroot",
+
+        the wwroot folder gets create when a production build of the api is made:
+        
+        The api needs to be configured to host static files in order for this to folder to be accessable:
+
+        program.cs > update to allow static files:
+            after auth service setup and before the controller mapping put:
+                app.UseAuthorization();
+
+                app.UseDefaultFiles();
+                app.UseStaticFiles();
+
+    Create a production build of the client angular app:
+        CLI: from the client in this case TeborawWebapp/client 
+            ng build
+
+        of course receive a build error:
+            The package "url" wasn't found on the file system but is built into node. Are you trying to bundle for node? You can use "platform: 'node'" to do that, which will remove this error.
+
+            donwgraded to signalr 7 for the time beang via:
+                npm install @microsoft/signalr@7
+           
+            Build  worked with errors thoug:
+                ✘ [ERROR] bundle initial exceeded maximum budget. Budget 1.00 MB was not met by 282.95 kB with a total of 1.28 MB.
+
+            angular.json :
+                budget update to allow higher mb space:
+                "maximumWarning": "1mb",
+                  "maximumError": "2mb"
+        The build shoult generate the wwwroot folder with js content:
+            
+
 ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
 NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 

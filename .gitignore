@@ -3,3 +3,4 @@ TeborawAPI/obj/
 TeborawAPI/obj/*
 obj/
 TeborawAPI/appsettings.json
+TeborawAPI/wwwroot/*

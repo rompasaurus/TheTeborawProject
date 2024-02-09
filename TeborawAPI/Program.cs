@@ -36,6 +36,12 @@ app.UseAuthentication();
 // What are you allowed to do
 app.UseAuthorization();
 
+
+//THe index.html if available will be hosted 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller}/{action=Index}/{id?}");
