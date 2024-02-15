@@ -37,6 +37,8 @@ public class Seed
             foreach (var user in users)
             {
                 user.UserName = user.UserName.ToLower();
+                user.Created = DateTime.SpecifyKind(user.Created, DateTimeKind.Utc);
+                user.LastActive = DateTime.SpecifyKind(user.Created, DateTimeKind.Utc);
                 await userManager.CreateAsync(user, "Pa$$w0rd");
                 await userManager.AddToRoleAsync(user, "Member");
             }

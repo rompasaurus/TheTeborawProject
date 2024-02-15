@@ -7178,110 +7178,149 @@ February 8 2024:
                 this.model = {}
             },
 
-Publishing THe web and api application:
-    api is going to be setup to host the angular js files for the front end 
+February 9 2024
 
-    first steps:
-        refactor the localhost urls in the client app and set as an environment variable:
+    Publishing THe web and api application:
+        api is going to be setup to host the angular js files for the front end 
 
-    Set the output director for the angular build fiels:
-        angular.json > build > options : 
-            the output will be hosted by the api and thus need to be output in a www root folder of the API:
-                "build": {
-                    "builder": "@angular-devkit/build-angular:application",
-                    "options": {
-                        "outputPath": "../TeborawAPI/wwwroot",
+        first steps:
+            refactor the localhost urls in the client app and set as an environment variable:
 
-        the wwroot folder gets create when a production build of the api is made:
-        
-        The api needs to be configured to host static files in order for this to folder to be accessable:
+        Set the output director for the angular build fiels:
+            angular.json > build > options : 
+                the output will be hosted by the api and thus need to be output in a www root folder of the API:
+                    "build": {
+                        "builder": "@angular-devkit/build-angular:application",
+                        "options": {
+                            "outputPath": "../TeborawAPI/wwwroot",
 
-        program.cs > update to allow static files:
-            after auth service setup and before the controller mapping put:
-                app.UseAuthorization();
+            the wwroot folder gets create when a production build of the api is made:
+            
+            The api needs to be configured to host static files in order for this to folder to be accessable:
 
-                app.UseDefaultFiles();
-                app.UseStaticFiles();
+            program.cs > update to allow static files:
+                after auth service setup and before the controller mapping put:
+                    app.UseAuthorization();
 
-    Create a production build of the client angular app:
-        CLI: from the client in this case TeborawWebapp/client 
-            ng build
+                    app.UseDefaultFiles();
+                    app.UseStaticFiles();
 
-        of course receive a build error:
-            The package "url" wasn't found on the file system but is built into node. Are you trying to bundle for node? You can use "platform: 'node'" to do that, which will remove this error.
+        Create a production build of the client angular app:
+            CLI: from the client in this case TeborawWebapp/client 
+                ng build
 
-            donwgraded to signalr 7 for the time beang via:
-                npm install @microsoft/signalr@7
-           
-            Build  worked with errors thoug:
-                ✘ [ERROR] bundle initial exceeded maximum budget. Budget 1.00 MB was not met by 282.95 kB with a total of 1.28 MB.
+            of course receive a build error:
+                The package "url" wasn't found on the file system but is built into node. Are you trying to bundle for node? You can use "platform: 'node'" to do that, which will remove this error.
 
-            angular.json :
-                budget update to allow higher mb space:
-                "maximumWarning": "1mb",
-                  "maximumError": "2mb"
-        The build shoult generate the wwwroot folder with js content:
+                donwgraded to signalr 7 for the time beang via:
+                    npm install @microsoft/signalr@7
+            
+                Build  worked with errors thoug:
+                    ✘ [ERROR] bundle initial exceeded maximum budget. Budget 1.00 MB was not met by 282.95 kB with a total of 1.28 MB.
 
-        The angular should host auto,atically asuming there is an index.html in the wwwroot folder which... there isnt
-        Nagular seems to pup it inside a browser folder in wwwroot
+                angular.json :
+                    budget update to allow higher mb space:
+                    "maximumWarning": "1mb",
+                    "maximumError": "2mb"
+            The build shoult generate the wwwroot folder with js content:
 
-        need to either update the pass on the api or get angular to not put it in the browser folder
+            The angular should host auto,atically asuming there is an index.html in the wwwroot folder which... there isnt
+            Nagular seems to pup it inside a browser folder in wwwroot
 
-        updated the builder in the api to use the borwser folder:
-            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-                {
-                    Args = args,
-                    WebRootPath = "wwwroot/browser"
-                });
+            need to either update the pass on the api or get angular to not put it in the browser folder
+
+            updated the builder in the api to use the borwser folder:
+                var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+                    {
+                        Args = args,
+                        WebRootPath = "wwwroot/browser"
+                    });
 
 
-    Adding a fallback controller to let angular handle routing:
-    NOT SURE THIS IS NEEDED AS THE ANG ROUTES WORK JUST FINE 
-        public class FallbackController: Controller
-        {
-            public ActionResult Index()
+        Adding a fallback controller to let angular handle routing:
+        NOT SURE THIS IS NEEDED AS THE ANG ROUTES WORK JUST FINE 
+            public class FallbackController: Controller
             {
-                return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(),
-                    "wwwroot/browser", "index.html"), "text/HTML");
+                public ActionResult Index()
+                {
+                    return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(),
+                        "wwwroot/browser", "index.html"), "text/HTML");
+                }
             }
-        }
-        app.MapFallbackToController("Index", "Fallback");
-                return next.handle(req).pipe(
-                //this is a synthetic delay for development to allow for loading bar to show itself
-                //Idenetity does nothing but cant have a null fn call 
-                (environment.prodution ? identity : delay(1000),
+            app.MapFallbackToController("Index", "Fallback");
+                    return next.handle(req).pipe(
+                    //this is a synthetic delay for development to allow for loading bar to show itself
+                    //Idenetity does nothing but cant have a null fn call 
+                    (environment.prodution ? identity : delay(1000),
 
 
-        now if ngbuild 
-            https://localhost:5001/members/ruthie?tab=Messages 
-            will be effectively treated as a production envirionment and loading should be gone 
+            now if ngbuild 
+                https://localhost:5001/members/ruthie?tab=Messages 
+                will be effectively treated as a production envirionment and loading should be gone 
 
-    Remove the fake delay:
-        loading interceptor:
-
-
+        Remove the fake delay:
+            loading interceptor:
 
 
+Dockerizing the app:
+    create dockerfile generate from rider :
+        FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+        USER $APP_UID
+        WORKDIR /app
+        EXPOSE 8080
+        EXPOSE 8081
+
+        FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+        ARG BUILD_CONFIGURATION=Release
+        WORKDIR /src
+        COPY ["TeborawAPI/TeborawAPI.csproj", "TeborawAPI/"]
+        RUN dotnet restore "TeborawAPI/TeborawAPI.csproj"
+        COPY . .
+        WORKDIR "/src/TeborawAPI"
+        RUN dotnet build "TeborawAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+        FROM build AS publish
+        ARG BUILD_CONFIGURATION=Release
+        RUN dotnet publish "TeborawAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+
+        FROM base AS final
+        WORKDIR /app
+        COPY --from=publish /app/publish .
+        ENTRYPOINT ["dotnet", "TeborawAPI.dll"]
+
+    Postgress is not connected noe need to establish an env var:   
+        appsetting.development nolonger gets read 
+        also the server address needs updated as a dockerize container accessing another dockerized container usess and entirely different address pool.
+            "DefaultConnection": "Server=host.docker.internal;
+
+        rebuild dat app and see wahat happens this time from terminal:
+            from TeborawAPI
+
+
+February 15 2024:
+    Continuing to dockerize the app cannot seem to connect from the api to sql docker 
+    going to try to troubleshoot this today 
+
+    2024-02-15 20:22:14       Npgsql.NpgsqlException (0x80004005): Failed to connect to [::1]:5432
+    2024-02-15 20:22:14        ---> System.Net.Sockets.SocketException (99): Cannot assign requested address
+    2024-02-15 20:22:14          at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.CreateException(SocketError error, Boolean forAsyncThrow)
+    2024-02-15 20:22:14          at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ConnectAsync(Socket socket)
+
+    First problem the docker was running under the development environment wich is defualt unless specifice in the docker file:
+        ENTRYPOINT ["dotnet", "TeborawAPI.dll","--environment=Development"]
+
+
+
+    ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
+    NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 
 
 
 
+    BUILD PROCESS NOW:
+        go to client app folder run :
+            ng build 
 
-
-
-
-
-
-ALso null date times seem to be returns as 0-0-0-0000 fucking up the messages 
-NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
-
-
-
-
-BUILD PROCESS NOW:
-    go to client app folder run :
-        ng build 
-
-        this generates the js and index files and places into the 
-        TeborawAPI/wwwroot/browser 
+            this generates the js and index files and places into the 
+            TeborawAPI/wwwroot/browser 
 
