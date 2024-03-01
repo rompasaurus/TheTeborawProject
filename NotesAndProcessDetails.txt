@@ -7315,7 +7315,23 @@ February 15 2024:
     NEED TO ADDRESS THE DATE AND TIMES TO UTC EVERYWHERE IN THE APP
 
 
+March 1 2024:
+    THe environment doesnt seem to be dictated by the dockerfile 
+        changed:
+            ENTRYPOINT ["dotnet", "TeborawAPI.dll","--environment=Development"] to ENTRYPOINT ["dotnet", "TeborawAPI.dll","--environment=Production"]
+        the docker run seems to still indicate:
+            Microsoft.Hosting.Lifetime[0]
+            2024-03-01T20:06:04.092403671Z       Hosting environment: Development
 
+
+    Might have made some progress went the manual route to build the docker container via:
+         docker build -t rompasaurus/tbapp .  
+         docker run --rm -it docker.io/rompasaurus/tbapp 
+         docker run --rm -it -p 8080:80  docker.io/rompasaurus/tbapp 
+
+         receive a blank page with connection reset error:
+            Failed to load resource: net::ERR_CONNECTION_RESET
+            docker shows that it is running under the prod env variable but will not connect gonna work on this more tomorrow
 
     BUILD PROCESS NOW:
         go to client app folder run :
