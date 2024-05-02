@@ -1,0 +1,18 @@
+This Document is intended to be a short term tracking mechanism for the items that need to be completed so that a more official pipeline and dev process can be established and put into place:
+
+
+To Do stack:
+    Translate the journalling app from the teboraw beta 1 over and tie into the auth 
+    Also need to implement a password reset option along with mail account verification service 
+    the sign up form is kind of horrendous clean it up and make the date picker better allow for varried date types to be typed in 
+    Flesh out an about page 
+    Translate teh journalling app from the teboraw beta 1 over and tie into the auth 
+    take another stab at dockerizing the application and putting it on the cloud 
+    find a way to make this todo list more approachable and less daunting 
+
+
+
+Done:
+    Get the application working locally again 
+    get rid of most of the dating elements of the site and translate them to be broader member listings and messaging, dont need to filter by gender anymore either actually I can  keep it in wouldnt hurt to have among other options, but default the filter to all initially 
+        changed the liked page to following page and removed the looking for field on the bio pages

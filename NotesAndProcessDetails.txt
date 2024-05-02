@@ -7340,3 +7340,16 @@ March 1 2024:
             this generates the js and index files and places into the 
             TeborawAPI/wwwroot/browser 
 
+
+May 2 2024:
+    quick notes for getting things to run again locally:
+        when run from rider the bacend will build with the latest code however the front end will only host the last official publish of the angular client app to the appsettings establish port which right now is 5001 
+
+    quick and dirty with no publish or deploy shenaniigans is to 
+        cd to the client app and run: 
+            ng serve 
+        which will host the latest dev copt of the angular front end on local host which will only be avail on the computer running the client app and not any other comp on the network
+
+        to allow external connections run: 
+            ng serve --host 0.0.0.0
+        Although the api may not epreciate external connections and cors will complain 
