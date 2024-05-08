@@ -1,0 +1,9 @@
+<monaco-tree
+  id="monacoTree"
+  [theme]="dark ? 'vs-dark' : 'vs-light'"
+  [height]="'100%'"
+  [width]="'100%'"
+  [tree]="tree"
+  (clickFile)="openJournal($event)"
+  (clickContextMenu)="handleContextMenu($event)"
+></monaco-tree>

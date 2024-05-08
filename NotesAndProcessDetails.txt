@@ -7353,3 +7353,18 @@ May 2 2024:
         to allow external connections run: 
             ng serve --host 0.0.0.0
         Although the api may not epreciate external connections and cors will complain 
+
+
+May 8:
+    Translating over the journal and journal raw data and components from previous application 
+        dotnet ef migrations  add addJournals
+        dotnet ef database update
+
+    got the monaco tree and editor to load 
+    needed to add 
+        "assets": [
+              { "glob": "**/*", "input": "node_modules/monaco-editor", "output": "assets/monaco" },
+            ],
+        to angular.json 
+    THe styling is horrendous on the jounal page fixing now took the router decorator out of the div container and it now appears to be normal
+    Page appears almost similar to 1.0, the back end functionality is not quite working getting errors 

@@ -1,0 +1,52 @@
+<div id="journalContent" style="width:100%; height: 100%; background: gray;">
+    <div id="OptionsNavBar" class="navbar-toggle">
+      <button class="journalOption"type="button"(click)="saveJournal()">
+        Save
+      </button>
+      <button class="journalOption"type="button"(click)="retrieveJournalRawList()">
+        Retrieve Journals
+      </button>
+      <button class="journalOption"type="button"(click)="newJournal()">
+        New Journal
+      </button>
+    </div>
+    <as-split  direction="horizontal">
+      <as-split-area [size]="20">
+        <as-split direction="vertical">
+          <as-split-area id="TopicListArea" class="journalArea list" >
+            <app-topic-tree id="topicTree"
+              [journalTopics] = topicModel
+              [journalRaw] = currentJournalRAW
+              [currentTopic] = currentTopic
+            >
+            </app-topic-tree>
+          </as-split-area>
+          <as-split-area id="JournalListArea" class="journalArea list" >
+            <p>
+              This will have the last journal and their dates
+            </p>
+  
+          </as-split-area>
+        </as-split>
+      </as-split-area>
+      <as-split-area [size]="80">
+        <as-split direction="vertical">
+          <as-split-area id="JournalContentArea" class="journalTextArea" [size]="75">
+            <ngx-monaco-editor class="my-code-editor" style="width:100%; height: 100%"
+              [options]="options"
+              [(ngModel)]="currentJournalRAW.content"
+              (onInit)="initEditor($event)">
+            </ngx-monaco-editor>
+          </as-split-area>
+          <as-split-area id="TopicDetailsArea" class="journalArea" [size]="25">
+            <p>
+              current topic selection stats
+            </p>
+          </as-split-area>
+        </as-split>
+      </as-split-area>
+    </as-split>
+  </div>
+  <small>Angular Version: {{ version }}</small>
+  
+  

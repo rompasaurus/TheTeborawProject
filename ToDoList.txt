@@ -2,7 +2,9 @@ This Document is intended to be a short term tracking mechanism for the items th
 
 
 To Do stack:
-    Translate the journalling app from the teboraw beta 1 over and tie into the auth 
+    Wire up the Journalling to the controller create data types and tables to go along with it 
+    Get save and load journal button working 
+    fix styling add a footer and spacing around the entire journal screen
     Also need to implement a password reset option along with mail account verification service 
     the sign up form is kind of horrendous clean it up and make the date picker better allow for varried date types to be typed in 
     Flesh out an about page 
@@ -16,3 +18,4 @@ Done:
     Get the application working locally again 
     get rid of most of the dating elements of the site and translate them to be broader member listings and messaging, dont need to filter by gender anymore either actually I can  keep it in wouldnt hurt to have among other options, but default the filter to all initially 
         changed the liked page to following page and removed the looking for field on the bio pages
+    Translate the journalling UI from the teboraw beta 1 over and tie into the auth 

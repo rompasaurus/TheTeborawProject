@@ -32,6 +32,11 @@ import { RolesModalComponent } from './modals/roles-modal/roles-modal.component'
 import {RouteReuseStrategy} from "@angular/router";
 import {CustomRouteReuseStrategy} from "./_services/customRouteReuseStrategy";
 import { ConfirmDialogComponent } from './modals/confirm-dialog/confirm-dialog.component';
+import { JournalComponent } from './journal/journal.component';
+import { TopicTreeComponent } from './topic-tree/topic-tree.component';
+import {NgxMonacoTreeModule, NgxMonacoTreeComponent} from 'ngx-monaco-tree';
+import {AngularSplitModule} from "angular-split";
+import {MonacoEditorModule} from "ngx-monaco-editor-v2";
 
 @NgModule({
   declarations: [
@@ -56,8 +61,11 @@ import { ConfirmDialogComponent } from './modals/confirm-dialog/confirm-dialog.c
     PhotoManagementComponent,
     RolesModalComponent,
     ConfirmDialogComponent,
+    JournalComponent,
+    TopicTreeComponent,
   ],
   imports: [
+    MonacoEditorModule.forRoot(),
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
@@ -65,7 +73,9 @@ import { ConfirmDialogComponent } from './modals/confirm-dialog/confirm-dialog.c
     BrowserAnimationsModule,
     SharedModule,
     GalleryComponent,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    NgxMonacoTreeModule,
+    AngularSplitModule
   ],
   providers: [
     provideClientHydration(),

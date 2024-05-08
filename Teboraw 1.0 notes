@@ -1,0 +1,324 @@
+July 3rd 2023:
+    Finally decided to hunker down and getting something in place for this site, tired of letting it overwhelm me
+    
+    Outline of First steps: 
+        Create a Journalling platform 
+            which starts by making a simple page where you can create topics, dictated with first set of chars on a line denote with a : semicolon character also implies no whitespace proceeds the chars on the line prior to the first char 
+            Step 1:
+                Create a page with a sidebar that can scroll left and right to resize on the left side is a list of topics and on the right side will be text input 
+            
+            Step 2: 
+                Any words followed with a semicolon an no whitespace proceeding it gets added to the left hand sidebar 
+
+    Step 1 execution:
+        Need to create a component maybe label it journal now to remember the ng command:
+            ng generate component [name]
+            Cd into the ClientApp Folder and run this comman
+            ng generate component journal --module=app.module
+        Component succesfully created need to wired up to the router 
+         added to main header :
+            <li class="nav-item" [routerLinkActive]="['link-active']">
+                <a class="nav-link text-dark" [routerLink]="['/journal']"
+                >Journal</a
+                >
+            </li>
+
+        added to router in app.module.ts:
+            { path: 'journal', component: JournalComponent, canActivate: [AuthorizeGuard] },
+
+    Step 2 add sidebar:
+        this is where shite broke 
+        tried to pull in the code from here 
+        https://stackblitz.com/edit/angular-nebular-sidebar-resize?file=src%2Fapp%2Fapp.module.ts,src%2Fapp%2Fapp.component.ts
+        bunch of components and install needed via npm and still didnt work
+        half tempted to buy a kendo license but going to research this more tomorrow there should be an easier way thats free
+
+July 4 2023
+    Had to clean out the dependencies and run a npm reinstall 
+    also cleared my connection string inadvertantly 
+    Connection string Future ref
+        "DefaultConnection": "Server=localhost; Database=Teboraw; User=sa; Password =Bigmac12!;TrustServerCertificate=true"
+        hard coded creds aint that great 
+        also this was only setup so i can work on the mac m1 with mssql running in a docker
+
+
+July 15 2023
+    Back at it after a brief break ....
+    Split view implementation thats today's goal 
+        3 views that can be customize to fit all on the same page 
+        https://stackblitz.com/edit/angular-split-demo-qmnmqp?file=src%2Fapp%2Fapp.component.html,src%2Fapp%2Fapp.component.ts
+        https://www.npmjs.com/package/angular-split
+        angular split to the rescues with custom scroll bar to boot thanks to 
+        https://dev.to/xtrp/how-to-create-a-beautiful-custom-scrollbar-for-your-site-in-plain-css-1mjg
+        now to get the split view to fill the page edge to edge sparing the top bar and footer
+        got the the boxes to fill the screen now their overfilling the screen can't seem to figure out why
+
+    Fixed the overflow on the split views subtracted 25px from the height to account for the header and footers
+    Added text area to the main journal screen and got the background to turn gray 
+    new probems:
+        can't see the mouse cursor when hovering over the text area 
+        cant use tab as a .. tab 
+        text area sucks hard 
+        https://www.npmjs.com/package/@ngstack/code-editor to the rescue
+        npm install @ngstack/code-editor
+        import { CodeEditorModule } from '@ngstack/code-editor';
+            @NgModule({
+            imports: [
+                ...,
+                CodeEditorModule.forRoot()
+            ],
+            ...
+            })
+            export class AppModule {}
+        https://stackoverflow.com/questions/66513287/cant-bind-to-value-since-it-isnt-a-known-property-of-ngs-code-editor
+        finally got the code editor module working not quite sure why it took so long 
+
+July 16 2023
+    hard coded editor fill entire content area 
+    not much else done on this project today
+    to do's
+        find a way to disable autocomplete or have it autocomplete dictionary words instead of code
+        pull colone'd out words to topic sidebar
+        implement word wrap
+
+July 18 2023 
+    Word wrap is todays 1st priority 
+        remove the weird context options by changing the language to txt from json now the autofill is somewhat sane
+        still need to figure out word wrap 
+    Enabled word wrap via:
+            wordWrap: "on" passed in as an option
+    note how to access component from console:
+        Select component root element in developer tools (Inspector), then type in console:
+            ng.getComponent($0);
+    Added a listener to the code editor to console print for now but will do cool shit later
+    aprantly the code edititor is built on top of the monaco editor which is used for vscode 
+        https://microsoft.github.io/monaco-editor/docs.html#modules/languages.html
+        there is some super powerful shit going on under the hood 
+    next step create a tree hierachy of topics for the topic partial window
+        time to research 
+
+    next steps:
+        look into spell check options 
+        left hand toolbars
+        word count 
+        
+July  19:
+    Still stuck on the tree error gotta throw it out and start fress 
+
+July 20:
+    https://stackblitz.com/edit/ngx-monaco-tree-demo-7oxsd8?file=src%2Fapp%2Fapp.component.html
+    Monaco tree gonna give it a go herre 
+        https://stackblitz.com/edit/ngx-monaco-tree-demo-7oxsd8?file=src%2Fapp%2Fapp.component.html
+    got a preliminary tree structure put in code compiles now and made the journal component not standalone took forever to figure out the dependencies but all is well 
+        key to the dependency is when you remove the standalone flag you need to declare the component within a module in this case the app.module 
+
+July 30:
+    The topic tree I need it to fill the height and width 
+    I can access the style through the chrome debug and cahnge the values to 100%
+    but I can't determine programmaticly how this value is set as its a 3rd party component -> MonacoTreeElement
+        element.style {
+            height: 500px;
+            width: 300px;
+        }
+    Figured it out had to pass in [width] and [height] values in the component declarations
+    
+    Now to make journalled topics show up in the the side bar:
+        the topic tree follows this data pattern 
+            {
+                name:
+                content:[
+                    {
+                        name: topic
+                    },
+                    {
+                        name: subtopic
+                        content:[
+                            {
+                                name:sub-subtopic
+                            }
+                        ]
+                    }
+                ]            
+            }
+    need to pull in example journalled text to see if I can parse and translate it into this format
+
+    Parent topic are dictated by no tab special char and are REQUIRED
+    sub topic are dictated by 1 tab and set of words ended in a semcolon 
+    sub sub topics are then 2 tabs 
+
+    How to access an angular component from the chrome console:
+        Angular 9+:
+            Select component root element in developer tools (Inspector), then type in console:
+            ng.getComponent($0);
+    
+    got preliminary code inplace to parse the journal text and attempt to convert it into a topic tree
+        the topic tree is not perfect it pulls the topic data into the tree as well so that will need to be addressed
+        alos the base of the tree only allows for one topic
+
+August 8, 2023:
+    finally got the tree figured out chat gpt to the rescue 
+    end up needing to make a list of topics conuntintg the number of spaces in the text and translating that into monaco nodes
+    the monaco node translation was a bit tricky had to dust of the tree traversal notes and work with chatgpt to get the code in place to create the nodes on the righ levels via the stack method.
+    
+August 10, 2023:
+    Time to retain the journal data starting with local storage moving to the backend 
+    saved journal to local storage
+
+August 11, 2023:
+    Time to persist data to a the database 
+
+September 15, 2023:
+    Setup the new laptop today had some hiccups along the way finally got the code to compile and run,
+    pulled my docker image over and  had to reconnect to the mssql instance and create the teboraw db again 
+    localhost, 1433  username: sa and pw is in the config 
+
+    had to update the databse again with both context via
+        dotnet ef database update --project Teboraw --context ApplicationDbContext
+        dotnet ef database update --project Teboraw --context JournalContext
+
+December 3, 2023:
+    Persisance day got the context setup just need to save it.. easy right 
+    also need to get the top bar fleshed out and remove the template links and get the teboraw icon all the way to the right hand side 
+
+    Changes needed:
+        THe first line of the journal content should dictate the journals title 
+        changes in the side bar should reflect in the journal and vice versa 
+        save button/toolbar needs added to the top of the page 
+        save needs wired to the back end persistence enabled 
+        topic bar should remain upen after updates in the journal 
+        Teboraw title should align left and rest of the link align right 
+        fetch dat home and counter links need remove from the top bar 
+
+December 9 2023 
+    implementing Persistance 
+        Start with the raw journal and wire up a save and create new journal options 
+        journal title should be the first line of the journal 
+        Then work on sub topic mapping
+
+    Need to locate the dal and controllers I created a while ago
+    JournalController is the sweet spot 
+
+December 16 2023:
+    Cannot seem to hit journal controller endpoint need tools to assists in api formaulation 
+    setup swagger
+
+December 17 2023:
+    Can finally hit the controller endpoint removed the [authorize] tag from the controller to allow get req to comin without auth data
+        need to figure out how angular can route to the page https://localhost:44461/journal but no if you manually input the address via copy and paste
+        the proxy configs needed updated to forward request to the JournalData route to the .net iis server otherwise the endpoint is never toched
+
+        added "/journalData" to the proxy.conf.js file and all is well'
+
+December 21 2023:
+    Endpoint  issue figured out now its time to persist a journal 
+
+December 23 2023:
+    Persistance finally implement 
+        ran into issues witht the post endpoint, core by default requires anything with an id ending to be passed in 
+        passed those values in and successfully and values now update.
+        next issue is getting the journal entry to load on the page once pulled from the Endpoint
+        the codemodel does not update the page 
+
+        Angular debug notes:
+            add angular dev tools to chrome 
+            to access a componenest values 
+            As a shortcut in the console, Angular DevTools provides you access to instances of the recently selected components or directives. Type $ng0 to get a reference to the instance of the currently selected component or directive, and type $ng1 for the previously selected instance.
+        
+        swapped the editor module from CodeEditorModule MonacoEditorModule and I had to as a result upgrate to angular 17 and reorient the code abit but now that its implemented its working perfectly 
+            applied a change listener thanks to the onInit event emitters of the module 
+            currentJournalRAW binds both ways with the editors values and in the journal component I no longer need to marshall data
+
+        able to add a new journal and then select and open the other journals the user has created 
+        need prompts when the user switches journals
+        also something wonk happens after saving the journal list doubles up 
+
+December 28 2023:
+    Deploy website and sql to seed box 
+    
+    Storing docker azure studio mssql setting: 
+        server: localhost, 1433
+        sso login 
+        username: sa
+        pw: you know the one 
+        trust server certificate: true 
+        encrypt Mandatory
+        
+        "DefaultConnection": "Server=localhost; Database=Teboraw; User=sa; Password =Bigmac12!;TrustServerCertificate=true"
+        
+    Creating postgres docker 
+        docker run --hostname=0d836f8a04ae --mac-address=02:42:ac:11:00:03 --env=POSTGRES_PASSWORD=Bigmac12! --env=POSTGRES_USER=Teboraw --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin --env=GOSU_VERSION=1.16 --env=LANG=en_US.utf8 --env=PG_MAJOR=15 --env=PG_VERSION=15.5-1.pgdg110+1 --env=PGDATA=/var/lib/postgresql/data --volume=/var/lib/postgresql/data -p 5432:5432 --runtime=runc -d postgres:15.5-bullseye
+        
+        Used Datagrip and successfully connected to postgress server now to change the db context to see what I break 
+        Also need to figure out ssl certs with the sql db 
+        postgres was a mess to figure out I may have to wait a bit before I really dive into that shitshow 
+            really just want to make progress alothough longterm I dont want to pay mssql fees
+    
+December 29 2023:    
+    Stuck it out and migrated to postgres turns out it wasnt so bad once I realized I malforme the connection string 
+        "DefaultConnection": "Server=localhost; Port=5432; Database=Teboraw; Username=Teboraw; Password =Bigmac12!;TrustServerCertificate=true"
+    Username not user ffs 
+    also removed Journal db context and made it all one dbcontext for simplicity 
+
+December 30 2023:
+    Created a popupservice and template popup that appears when you try to make a new journal with a pending unsaved new journal in wait 
+    
+    Next Steps:
+        need to tie the user inputs to either save the journal or go back to it and edit it.
+        add sortability to root tree topics
+        implement delete on journal 
+        fix top header styling bar and sizing of page 
+        add journal change history
+        determine the limits of chars in a journal for postgress
+        clicking a journal subtopic should take you to the line in the journal and highlight it
+        add highlighting to selected tree somehow
+            might need a whole rewrite of my own tree component 
+        Implement a development pipeline and use the work tower to host it 
+            docker dat bitch up 
+        *Addreess double up issue when creating a new journal and navigating away from the journal and back 
+        testing platform research into that as well 
+        reset to top of page upon journal open
+        add save icon to the the left of the journal tree icon to indicate its has been updated 
+        Date created has no timestamps need to fix that 
+    
+    got stuck in dependency hell 
+        when in doubt delete package-lock.json and code_mudules and npm install
+        ngx-monaco-tree is troublesome its still stuck on ang 15 for its depencies need to sorcce install it to get the app to run proper 
+        
+    retrieve and new journal are not working right they are doubling up in the process of adding it to the journal list 
+        figured it out today needed to pop the journal onto the list upon creatiing it
+    
+    receiving this error now:
+        Refused to apply style from 'https://localhost:44461/node_modules/@angular/material/prebuilt-themes/indigo-pink.css' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled.not entirely sure why 
+        turns out I had hardcoded a stysheet in index.html removed it and all is well 
+        
+December 31 2021:
+    Got vs, rider, datagrip and docker install on the tower 
+    pulled images for jenkins and postgres
+    not as much as I wanted to do but a start for tomorrow 
+
+January 1:
+     not much accomplished dockers deployed attempted to update to .net core not yet there more research needed
+
+January 2:
+    Created a docker build file and attemped to deploy it but alas I cannot reach the site when running the docker,
+    it seem like its only running the api portion and not the angular bit 
+    dont know whats happening I need a break from it gonna go walk 
+    Back:
+        Looks like that's the case is the api are accepting request but theres no front end
+        the docker build is silently failing on the npm install and builds parts had to 
+        manually build the docker to find out via command:
+            have to run this in the dir with the soln file in it
+            docker build -f Teboraw/Dockerfile -t teborawcmd:dev .
+        Disabing quick build in dockfile configs of rider also forced a full rebuild 
+        
+January 3 2024:
+    Spinning my wheels a bit now 
+    docker didnt work tried to go the publish route publishe the prod viersion went to the publish folder and ran 
+    dotnet Teboraw.dll
+    ran into null issue with the key server has to set a property
+    rest points are reachable but no angular routing or pages really at my wits end on this on 
+
+January 4 2024:
+    Not much done today decided to give head a rest 
+    added ng serve --host=0.0.0.0 --disable-host-check  to the package.json file 
+    need to find a way to get certs that are valid certbot on linux was how I usaully did it 

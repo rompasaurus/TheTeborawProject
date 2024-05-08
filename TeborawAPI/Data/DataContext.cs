@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Entities;
+using TeborawAPI.Models;
 
 namespace TeborawAPI.Data;
 
@@ -16,6 +17,8 @@ public class DataContext : IdentityDbContext<AppUser, AppRole, int,
     //this is now inherited from the identitydbcontext
     // public DbSet<AppUser> Users { get; set; }
     public DbSet<UserLike> Likes { get; set; }
+    public DbSet<JournalRaw> JournalRaw { get; set; }
+    public DbSet<Journal> Journal { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<Group> Groups { get; set;}
     public DbSet<Connection> Connections { get; set;}

@@ -31,6 +31,7 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
+              { "glob": "**/*", "input": "node_modules/monaco-editor", "output": "assets/monaco" },
               "src/favicon.ico",
               "src/assets"
             ],
@@ -77,7 +78,6 @@
             "ssl": true,
             "sslCert": "./ssl/localhost.pem",
             "sslKey": "./ssl/localhost-key.pem"
-
           },
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
@@ -105,6 +105,21 @@
             ],
             "tsConfig": "tsconfig.spec.json",
             "assets": [
+              {
+                "glob": "**/*",
+                "input": "../node_modules/monaco-editor/min/",
+                "output": "./assets/monaco-editor/"
+              },
+              {
+                "glob": "**/*",
+                "input": "../node_modules/monaco-editor/min-maps/",
+                "output": "./assets/min-maps/"
+              },
+              {
+                "glob": "favicon.ico",
+                "input": "./",
+                "output": "./"
+              },
               "src/favicon.ico",
               "src/assets"
             ],

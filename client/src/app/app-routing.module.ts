@@ -14,7 +14,8 @@ import {preventUnsavedChangesGuard} from "./_guards/prevent-unsaved-changes.guar
 import {memberDetailResolver} from "./_resolvers/member-detail.resolver";
 import {AdminPanelComponent} from "./admin/admin-panel/admin-panel.component";
 import {adminGuard} from "./_guards/admin.guard";
-
+import { JournalComponent } from './journal/journal.component';
+ 
 const routes: Routes = [
   {path: '', component: HomeComponent},
   {path: '',
@@ -22,6 +23,8 @@ const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {path: 'members', component: MemberListComponent},
+      {path: 'journal', component: JournalComponent},
+      {path: 'jnrl', component: JournalComponent},
       {path: 'members/:username', component: MemberDetailComponent, resolve: {member: memberDetailResolver}},
       {path: 'member/edit', component: MemberEditComponent, canDeactivate: [preventUnsavedChangesGuard]},
       {path: 'lists', component: ListsComponent},
