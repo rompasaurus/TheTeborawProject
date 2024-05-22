@@ -7368,3 +7368,33 @@ May 8:
         to angular.json 
     THe styling is horrendous on the jounal page fixing now took the router decorator out of the div container and it now appears to be normal
     Page appears almost similar to 1.0, the back end functionality is not quite working getting errors 
+
+May 22 2024:
+    Getting persistance in place:
+        chunk-7G5TR5RR.js?v=aec27bfc:43 ERROR TypeError: Cannot read properties of null (reading 'content')
+            at JournalComponent_Template (journal.component.html:36:34)
+            at executeTemplate (core.mjs:12314:9)
+            at refreshView (core.mjs:13541:13)
+            at detectChangesInView (core.mjs:13765:9)
+            at detectChangesInViewIfAttached (core.mjs:13728:5)
+            at detectChangesInComponent (core.mjs:13717:5)
+            at detectChangesInChildComponents (core.mjs:13778:9)
+            at refreshView (core.mjs:13591:13)
+            at detectChangesInView (core.mjs:13765:9)
+            at detectChangesInViewIfAttached (core.mjs:13728:5)
+
+        running into this error with the journal 
+
+        retrieveJournalFromList(jr: JournalRaw, jrList: JournalRaw[]){
+            let indexofJournal = jrList.findIndex((element) => element.journalRawId === jr.journalRawId)
+            if(indexofJournal >= 0) return jrList[indexofJournal];
+            return null;
+        }
+        produces a null value 
+        api was send a null value on journal retrieve if user had non instead of a new journal raw fixed that
+
+        icons are missing too  fixed that by copyin the assets over and updating package.json
+
+        Persistance has been established successful journals not save and load in the db 
+
+        next steps address horrendous registration process for first time users 
