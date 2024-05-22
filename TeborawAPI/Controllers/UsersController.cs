@@ -3,8 +3,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TeborawAPI.Data;
 using TeborawAPI.DTOs;
 using TeborawAPI.Entities;
 using TeborawAPI.Extensions;

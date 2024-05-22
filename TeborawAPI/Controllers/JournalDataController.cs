@@ -12,9 +12,7 @@ using TeborawAPI.Services;
 namespace TeborawAPI.Controllers;
 
 [Authorize]
-[ApiController]
-[Route("[controller]")]
-public class JournalDataController : Controller
+public class JournalDataController : BaseAPIController
 {
     private readonly ILogger<JournalDataController> _logger;
     private readonly UserManager<AppUser> _userManager;
