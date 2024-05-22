@@ -27,7 +27,7 @@ public class JournalRepository : IJournalRepository
         var journalRaw = _context.JournalRaw
             .Where(j => j.UserId == userId)
             .OrderByDescending(j => j.LastUpdated)
-            .FirstOrDefault();
+            .FirstOrDefault() ?? new JournalRaw();;
         return journalRaw;
     }
     
