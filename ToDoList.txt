@@ -2,12 +2,14 @@ This Document is intended to be a short term tracking mechanism for the items th
 
 
 To Do stack:
+    Get a dev pipeline create and get a prod version f the app created that is publicly accessib from teboraw.com
+    fix the registration process and prettify it 
     Get save and load journal button working 
     fix styling add a footer and spacing around the entire journal screen
     Also need to implement a password reset option along with mail account verification service 
     the sign up form is kind of horrendous clean it up and make the date picker better allow for varried date types to be typed in 
     Flesh out an about page 
-    Translate teh journalling app from the teboraw beta 1 over and tie into the auth 
+    Translate the journalling app from the teboraw beta 1 over and tie into the auth 
     take another stab at dockerizing the application and putting it on the cloud 
     find a way to make this todo list more approachable and less daunting 
     privatize the config and credentials
