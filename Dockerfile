@@ -30,7 +30,7 @@ EXPOSE 8080
 EXPOSE 8081
 COPY *.csproj ./
 RUN dotnet restore
-COPY ../
+COPY . ./
 RUN dotnet publish -c Release -o out 
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
