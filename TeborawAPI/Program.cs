@@ -42,6 +42,7 @@ app.UseAuthorization();
 
 
 //THe index.html if available will be hosted 
+//This allow the angular build static files to be hosted along with the api within kestral
 app.UseDefaultFiles();
 app.UseStaticFiles();
 

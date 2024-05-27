@@ -1,5 +1,5 @@
 export const environment = {
-    prodution: true,
+    production: true,
     apiUrl: 'api/',
     hubUrl: 'hubs/',
 };

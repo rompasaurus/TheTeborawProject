@@ -1,5 +1,5 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {Photo} from "../../_models/Photo";
+import {Photo} from "../../_models/photo";
 import {Member} from "../../_models/member";
 import {FileUploader, FileUploadModule} from "ng2-file-upload";
 import {environment} from "../../../environments/environment";

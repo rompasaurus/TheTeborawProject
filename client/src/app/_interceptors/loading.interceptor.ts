@@ -14,7 +14,7 @@ export class LoadingInterceptor implements HttpInterceptor{
     return next.handle(req).pipe(
       //this is a synthetic delay for development to allow for loading bar to show itself
       //Identity does nothing but cant have a null fn call
-      (environment.prodution ? identity : delay(1000)),
+      (environment.production ? identity : delay(1000)),
       finalize(()=> {
         this.busyService.idle()
       })

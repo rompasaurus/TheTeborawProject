@@ -7398,3 +7398,138 @@ May 22 2024:
         Persistance has been established successful journals not save and load in the db 
 
         next steps address horrendous registration process for first time users 
+
+May 26 2024:
+    Time to dockerize and figure out deployment methods and ultimately build a base of documentation that can be automated into a dev deployment pipeline
+
+    how to deploy angular app to a docker image:
+        https://dev.to/rodrigokamada/creating-and-running-an-angular-application-in-a-docker-container-40mk
+
+        create the Dockerfile file with the Docker image configuration in the root directory of the Angular application in the client folder.
+        with the following code : 
+            FROM node:alpine
+
+            WORKDIR /usr/src/app
+
+            COPY . /usr/src/app
+
+            RUN npm install -g @angular/cli
+
+            RUN npm install
+
+            EXPOSE 4200
+
+            CMD ["ng", "serve", "--host", "0.0.0.0"]
+
+    Running into erro upon docker deploy:
+        Application bundle generation failed. [2.449 seconds] 2024-05-26T15:10:43.524023253Z ✘ [ERROR] TS2307: Cannot find module
+        turns out the node mule being imported has a caps in the name which mac os is find with but linux aint had correct that and the deploy ran mostly
+
+    Docker manual commands:
+        build the docker image
+            docker build -t av-app-image .
+            docker build -t teborawdev .
+        list all docker images
+            docker image ls
+        run the docker container mapping the ports
+            docker run -p 4200:4200 teborawdev
+
+    This set of files and commands will create a docker image with a development copy of the client angular codebase 
+
+
+    Building and hosting your application
+        To build your application for production, use the build command. By default, this command uses the production build configuration.
+
+    content_copy
+    ng build
+        This command creates a dist folder in the application root directory with all the files that a hosting service needs for serving your application.
+
+    If the above ng build command throws an error about missing packages, append the missing dependencies in your local project's package.json file to  match the one in the downloaded StackBlitz project.
+
+    Copy the contents of the dist/my-project-name folder to your web server. Because these files are static, you can host them on any web server capable of serving files; such as Node.js, Java, .NET, or any backend such as Firebase, Google Cloud, or App Engine. For more information, see Building & Serving and Deployment.
+
+    I dont think docker is the way to go right now to host this web server really a pain for little reward
+
+
+Making a prod site the manual way 
+    Setup a linode instance to host teboraw :
+        https://cloud.linode.com/linodes
+        Cheap setup dedicated ip and my own ubuntu instance to set all the apps up on 
+            ssh root@172.233.217.204 to acces the instance 
+
+            install docker 
+                 sudo apt update
+                 sudo apt install docker.io
+                
+                start docker service and confirm it is running
+                sudo systemctl start docker
+                sudo systemctl status docker
+                        ● docker.service - Docker Application Container Engine
+                            Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; preset: enabled)
+                            Active: active (running) since Sun 2024-05-26 21:26:04 UTC; 20s ago
+                        TriggeredBy: ● docker.socket
+                            Docs: https://docs.docker.com
+                        Main PID: 2137 (dockerd)
+                            Tasks: 9
+                            Memory: 25.3M (peak: 25.7M)
+                                CPU: 236ms
+                            CGroup: /system.slice/docker.service
+                                    └─2137 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+
+                        May 26 21:26:04 localhost systemd[1]: Starting docker.service - Docker Application Container Engine...
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.125274825Z" level=info msg="Starting up"
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.125934211Z" level=info msg="detected 127.0.0.53 nameserver, assuming systemd-resolved, so using resolv.conf: /run/systemd/resolve/resolv.conf"
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.194149143Z" level=info msg="Loading containers: start."
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.371066311Z" level=info msg="Loading containers: done."
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.379279175Z" level=info msg="Docker daemon" commit=24.0.7-0ubuntu4 graphdriver=overlay2 version=24.0.7
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.379378915Z" level=info msg="Daemon has completed initialization"
+                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.402135008Z" level=info msg="API listen on /run/docker.sock"
+                        May 26 21:26:04 localhost systemd[1]: Started docker.service - Docker Application Container Engine.
+                        root@localhost:~# 
+            enable docker to start at boot
+                sudo systemctl enable docker
+                sudo systemctl enable containerd
+            verify docker is running:
+                sudo docker run hello-world
+
+            Install and run the postgress docker image:
+                docker run --hostname=2696e73221ac --mac-address=02:42:ac:11:00:02 --env=POSTGRES_USER=Teboraw --env=POSTGRES_PASSWORD=USE ENV PW --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin --env=GOSU_VERSION=1.16 --env=LANG=en_US.utf8 --env=PG_MAJOR=15 --env=PG_VERSION=15.5-1.pgdg110+1 --env=PGDATA=/var/lib/postgresql/data --volume=/var/lib/postgresql/data --network=bridge -p 5432:5432 --restart=no --runtime=runc -d postgres:15.5-bullseye
+            
+            List installed docker images:
+                docker image ls
+            
+            View running dockers:
+                docker info 
+                    shows how many images are running 
+                    docker container ls -a
+
+            Need to update the dockers to restart automatically if the node reboots 
+
+            setup datgrip to connect to postgres 
+
+            configure dotnet docker deployment to go to the linode docker host 
+            
+
+Publishing notes:
+    Consideration:
+        env environmentVariables
+        localhost 
+        cors 
+        database
+        cost 
+        scalability
+    let kestral host angular need to add fallback controller for routes that angular should be handling
+    public ActionResult Index()
+        {
+            return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(),
+                "wwwroot/browser", "index.html"), "text/HTML");
+        }
+    
+    THe proper docker process:
+        Through command line from api folder:
+        need to spec platform on the mac to amd64 for ubuntu to use it correctly
+            docker build --platform linux/amd64 -t rompasaurus/teborawprojectv1 .   (rompasaurus is my username will need to publish this to the docker repository)
+        Run the new docker image:
+             docker run --rm -it -p 8080:8080 rompasaurus/teborawprojectv1 
+        Deploy the docker image 
+            docker push rompasaurus/teborawprojectv1 
