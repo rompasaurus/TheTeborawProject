@@ -1,4 +1,4 @@
-name: ci
+name: docker-push
 
 on:
   workflow_dispatch:
@@ -24,6 +24,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: "{{defaultContext}}:API"
+          context: "{{defaultContext}}:TeborawAPI"
           push: true
-          tags: rompasaurus/TheTeborawProject:latest
+          tags: rompasaurus/teborawprojectv1:latest
