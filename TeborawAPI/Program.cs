@@ -1,8 +1,10 @@
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TeborawAPI.Data;
 using TeborawAPI.Entities;
 using TeborawAPI.Extensions;
+using TeborawAPI.Helpers;
 using TeborawAPI.Middleware;
 using TeborawAPI.SignalR;
 
@@ -14,8 +16,30 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 });
 builder.Services.AddApplicationsServices(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration);
+builder.Configuration.AddEnvironmentVariables();
 
+var connString = "";
+if (builder.Environment.IsDevelopment())
+{
+    connString = builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+}
+else
+{
+    var connUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    connString = connUrl;
+    builder.Services.Configure<CloudinarySettings>(options =>
+    {
+        options.ApiKey = Environment.GetEnvironmentVariable("APIKEY");
+        options.ApiSecret = Environment.GetEnvironmentVariable("APISECRET");
+        options.CloudName = Environment.GetEnvironmentVariable("CLOUDNAME");
+    });
 
+}
+builder.Services.AddDbContext<DataContext>(opt =>
+{
+    opt.UseNpgsql(connString);
+});
 var app = builder.Build();
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 app.UseMiddleware<ExceptionMiddleware>();
@@ -26,7 +50,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(); 
 app.UseRouting();
 app.UseCors(cPolicyBuilder => cPolicyBuilder
     .AllowAnyHeader()

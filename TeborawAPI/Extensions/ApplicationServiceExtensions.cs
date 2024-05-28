@@ -16,14 +16,10 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ITokenService, TokenService>();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
-        services.AddDbContext<DataContext>(opts =>
-        {
-            opts.UseNpgsql(config.GetConnectionString("DefaultConnection"));
-        });
         services.AddControllers();
         services.AddCors();
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-        services.Configure <CloudinarySettings>(config.GetSection("CloudinarySettings"));
+        //services.Configure <CloudinarySettings>(config.GetSection("CloudinarySettings"));
         services.AddScoped<IPhotoService, PhotoService>();
         services.AddScoped<LogUserActivity>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();

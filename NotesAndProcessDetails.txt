@@ -7451,85 +7451,142 @@ May 26 2024:
     I dont think docker is the way to go right now to host this web server really a pain for little reward
 
 
-Making a prod site the manual way 
-    Setup a linode instance to host teboraw :
-        https://cloud.linode.com/linodes
-        Cheap setup dedicated ip and my own ubuntu instance to set all the apps up on 
-            ssh root@172.233.217.204 to acces the instance 
+    Making a prod site the manual way 
+        Setup a linode instance to host teboraw :
+            https://cloud.linode.com/linodes
+            Cheap setup dedicated ip and my own ubuntu instance to set all the apps up on 
+                ssh root@172.233.217.204 to acces the instance 
 
-            install docker 
-                 sudo apt update
-                 sudo apt install docker.io
+                install docker 
+                    sudo apt update
+                    sudo apt install docker.io
+                    
+                    start docker service and confirm it is running
+                    sudo systemctl start docker
+                    sudo systemctl status docker
+                            ● docker.service - Docker Application Container Engine
+                                Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; preset: enabled)
+                                Active: active (running) since Sun 2024-05-26 21:26:04 UTC; 20s ago
+                            TriggeredBy: ● docker.socket
+                                Docs: https://docs.docker.com
+                            Main PID: 2137 (dockerd)
+                                Tasks: 9
+                                Memory: 25.3M (peak: 25.7M)
+                                    CPU: 236ms
+                                CGroup: /system.slice/docker.service
+                                        └─2137 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+
+                            May 26 21:26:04 localhost systemd[1]: Starting docker.service - Docker Application Container Engine...
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.125274825Z" level=info msg="Starting up"
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.125934211Z" level=info msg="detected 127.0.0.53 nameserver, assuming systemd-resolved, so using resolv.conf: /run/systemd/resolve/resolv.conf"
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.194149143Z" level=info msg="Loading containers: start."
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.371066311Z" level=info msg="Loading containers: done."
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.379279175Z" level=info msg="Docker daemon" commit=24.0.7-0ubuntu4 graphdriver=overlay2 version=24.0.7
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.379378915Z" level=info msg="Daemon has completed initialization"
+                            May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.402135008Z" level=info msg="API listen on /run/docker.sock"
+                            May 26 21:26:04 localhost systemd[1]: Started docker.service - Docker Application Container Engine.
+                            root@localhost:~# 
+                enable docker to start at boot
+                    sudo systemctl enable docker
+                    sudo systemctl enable containerd
+                verify docker is running:
+                    sudo docker run hello-world
+
+                Install and run the postgress docker image:
+                    docker run --hostname=2696e73221ac --mac-address=02:42:ac:11:00:02 --env=POSTGRES_USER=Teboraw --env=POSTGRES_PASSWORD=USE ENV PW --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin --env=GOSU_VERSION=1.16 --env=LANG=en_US.utf8 --env=PG_MAJOR=15 --env=PG_VERSION=15.5-1.pgdg110+1 --env=PGDATA=/var/lib/postgresql/data --volume=/var/lib/postgresql/data --network=bridge -p 5432:5432 --restart=no --runtime=runc -d postgres:15.5-bullseye
                 
-                start docker service and confirm it is running
-                sudo systemctl start docker
-                sudo systemctl status docker
-                        ● docker.service - Docker Application Container Engine
-                            Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; preset: enabled)
-                            Active: active (running) since Sun 2024-05-26 21:26:04 UTC; 20s ago
-                        TriggeredBy: ● docker.socket
-                            Docs: https://docs.docker.com
-                        Main PID: 2137 (dockerd)
-                            Tasks: 9
-                            Memory: 25.3M (peak: 25.7M)
-                                CPU: 236ms
-                            CGroup: /system.slice/docker.service
-                                    └─2137 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+                List installed docker images:
+                    docker image ls
+                
+                View running dockers:
+                    docker info 
+                        shows how many images are running 
+                        docker container ls -a
 
-                        May 26 21:26:04 localhost systemd[1]: Starting docker.service - Docker Application Container Engine...
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.125274825Z" level=info msg="Starting up"
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.125934211Z" level=info msg="detected 127.0.0.53 nameserver, assuming systemd-resolved, so using resolv.conf: /run/systemd/resolve/resolv.conf"
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.194149143Z" level=info msg="Loading containers: start."
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.371066311Z" level=info msg="Loading containers: done."
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.379279175Z" level=info msg="Docker daemon" commit=24.0.7-0ubuntu4 graphdriver=overlay2 version=24.0.7
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.379378915Z" level=info msg="Daemon has completed initialization"
-                        May 26 21:26:04 localhost dockerd[2137]: time="2024-05-26T21:26:04.402135008Z" level=info msg="API listen on /run/docker.sock"
-                        May 26 21:26:04 localhost systemd[1]: Started docker.service - Docker Application Container Engine.
-                        root@localhost:~# 
-            enable docker to start at boot
-                sudo systemctl enable docker
-                sudo systemctl enable containerd
-            verify docker is running:
-                sudo docker run hello-world
+                Need to update the dockers to restart automatically if the node reboots 
 
-            Install and run the postgress docker image:
-                docker run --hostname=2696e73221ac --mac-address=02:42:ac:11:00:02 --env=POSTGRES_USER=Teboraw --env=POSTGRES_PASSWORD=USE ENV PW --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin --env=GOSU_VERSION=1.16 --env=LANG=en_US.utf8 --env=PG_MAJOR=15 --env=PG_VERSION=15.5-1.pgdg110+1 --env=PGDATA=/var/lib/postgresql/data --volume=/var/lib/postgresql/data --network=bridge -p 5432:5432 --restart=no --runtime=runc -d postgres:15.5-bullseye
-            
-            List installed docker images:
-                docker image ls
-            
-            View running dockers:
-                docker info 
-                    shows how many images are running 
-                    docker container ls -a
+                setup datgrip to connect to postgres 
 
-            Need to update the dockers to restart automatically if the node reboots 
+                configure dotnet docker deployment to go to the linode docker host 
+                
 
-            setup datgrip to connect to postgres 
+    Publishing notes:
+        Consideration:
+            env environmentVariables
+            localhost 
+            cors 
+            database
+            cost 
+            scalability
+        let kestral host angular need to add fallback controller for routes that angular should be handling
+        public ActionResult Index()
+            {
+                return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(),
+                    "wwwroot/browser", "index.html"), "text/HTML");
+            }
+        
+        THe proper docker process:
+            Through command line from api folder:
+            need to spec platform on the mac to amd64 for ubuntu to use it correctly
+                docker build --platform linux/amd64 -t rompasaurus/teborawprojectv1 .   (rompasaurus is my username will need to publish this to the docker repository)
+            Run the new docker image:
+                docker run --rm -it -p 8080:8080 rompasaurus/teborawprojectv1 
+            Deploy the docker image 
+                docker push rompasaurus/teborawprojectv1 
 
-            configure dotnet docker deployment to go to the linode docker host 
-            
 
-Publishing notes:
-    Consideration:
-        env environmentVariables
-        localhost 
-        cors 
-        database
-        cost 
-        scalability
-    let kestral host angular need to add fallback controller for routes that angular should be handling
-    public ActionResult Index()
-        {
-            return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(),
-                "wwwroot/browser", "index.html"), "text/HTML");
-        }
-    
-    THe proper docker process:
-        Through command line from api folder:
-        need to spec platform on the mac to amd64 for ubuntu to use it correctly
-            docker build --platform linux/amd64 -t rompasaurus/teborawprojectv1 .   (rompasaurus is my username will need to publish this to the docker repository)
+    Setup Github action to build docket upon main code commits:
+        After some time rtrying to figure out how to deploy a 64bit dotnet publish within a docker image I found out that its not exactly posssible3 however github has actions that you can setup and it will auto build and deploy the code to a dockaer image based upon when the user chooses or when code gets checked into the main branch.
+
+        Requires the create of a .github folder within the main root of the api project along with a yml file to be create outlining docker repo env values and when to deploy settings as well   
+
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        establisht the secret and keys for the docker hub through github
+
+May 28 2024:
+    Refining the pipline and getting it public facing 
+
+    Generated a ssh key to push to the linode ubuntu server 
+        ssh-keygen -b 4096 -t rsa 
+        hit enter to use default id_rsa.pub file set password
+    Pushed key:
+        ssh-copy-id -i ~/.ssh/id_rsa.pub root@172.233.217.204
+
+    Pointed Teboraw dns to the linode server as well 
+        teboraw.com
+        A
+        N/A
+        172.233.217.204
+
+        teboraw.com
+        AAAA
+        N/A
+        2600:3c06:0:0:f03c:94ff:fe2a:6242
+
+
+    Setup docker for remote access:
+        on server
+            sudo systemctl edit docker.service --full
+            added : ExecStart=/usr/bin/dockerd -H tcp://127.0.0.1 -H fd:// --
+            export DOCKER_HOST=172.233.217.204
+            sudo apt install net-tools
+            sudo netstat -lntp | grep dockerd
+        this allow remote ssh access to the docker as well as portainer to beable to remotely access and provide gui tools which is a native utility to rider jetbrains 
+
+    Automate Docker Redeployment on server upon image update 
+
+    Docker Command List:
         Run the new docker image:
-             docker run --rm -it -p 8080:8080 rompasaurus/teborawprojectv1 
+            docker run --rm -it -p 8080:8080 rompasaurus/teborawprojectv1 
         Deploy the docker image 
             docker push rompasaurus/teborawprojectv1 
+        Pull latest docker image
+            docker pull rompasaurus/teborawprojectv1:latest
+
+
+    Setting up env variables for db connection and what not 
+        To pass in env to the docker you can just -e and the env name 
+
+    Got the docker to load mostly on cloud had to pass in env variables
+        docker run --rm -it --rm -it -p 80:8080  -e DATABASE_URL='Server=host.docker.internal; Port=5432; Database=; Username=Teboraw; Password=;TrustServerCertificate=true' -e APIKEY='' -e APISECRET='' -e CLOUDNAME='' rompasaurus/teborawprojectv1  .
