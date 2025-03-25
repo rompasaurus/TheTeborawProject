@@ -5,3 +5,6 @@ obj/
 TeborawAPI/appsettings.json
 TeborawAPI/wwwroot/*
 TeborawAPI/out/*
+.idea/config/applicationhost.config
+.vs/*
+TeborawAPI/.idea/*
