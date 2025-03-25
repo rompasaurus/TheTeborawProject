@@ -79,6 +79,19 @@ export class JournalComponent {
     console.log("editorEvents:", editorEvents);
     this.editor = editorEvents;
     this.editor.onDidType((char: string) => this.onCodeChanged(char));
+    
+    // Add resize observer to handle container resizing
+    const resizeObserver = new ResizeObserver(() => {
+      if (this.editor) {
+        this.editor.layout();
+      }
+    });
+    
+    // Observe the JournalContentArea
+    const contentArea = document.getElementById('JournalContentArea');
+    if (contentArea) {
+      resizeObserver.observe(contentArea);
+    }
   }
 
   onCodeChanged(char: string) {
